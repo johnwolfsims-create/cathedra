@@ -1015,7 +1015,7 @@ window.__mk=1;var orgel=new Orgel({key:S.key,mode:S.mode,aetherium:S.aetherium,p
 var organ=new Organ();window.__organ=organ;window.__orgel=orgel;
 organ.p.spiritus=S.spiritus;organ.p.color=S.color;organ.p.spatium=S.spatium;
 
-var highSounding=false,lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
+var lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
 var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble'];
 
 function chordDur(){var D=30-24*S.tempus;return D*(0.82+Math.random()*0.36);}
@@ -1039,28 +1039,13 @@ function sound(c,D){
   var att=Math.max(1.2,Math.min(3.5,D*0.18)),rel=Math.max(1.8,Math.min(5,D*0.26));
   var up=c.voicing.upper.slice();
   if(c.sus)up[c.sus.voice]=c.sus.from;
-  var dim=Orgel.DIMS[c.kind],HIGH=72,top=up[3];
-  for(var i=0;i<3;i++){
-    if(setVoice('u'+i,up[i],'manual',ampFor(up[i]),att,rel)) V.pulse(i);
+  var dim=Orgel.DIMS[c.kind],HIGH=72;
+  for(var i=0;i<4;i++){
+    // a diminished chord's rare high note is soft and slow, and the next chord must resolve it by step up high
+    var hi=dim&&i===3&&up[i]>HIGH;
+    if(setVoice('u'+i,up[i],'manual',ampFor(up[i])*(hi?0.4:1),hi?Math.max(3.5,att*1.6):att,rel)) V.pulse(i);
   }
-  // high notes never begin a chord cold: they enter halfway, resolve by step into the next chord,
-  // and are held at least halfway through it
-  var topAmp=function(m){return ampFor(m)*(m>HIGH?(dim?0.4:0.55):1);};
-  if(top>HIGH&&!highSounding){
-    if(c.sus&&c.sus.voice===3){top=c.voicing.upper[3];c.sus=null;}
-    setVoice('u3',null,'manual',0,att,rel);
-    later(function(){if(!playing||curChord!==c)return;if(setVoice('u3',top,'manual',topAmp(top),Math.max(3.5,att*1.6),rel))V.pulse(3);highSounding=true;orgel.highPending=true;},D*0.5);
-  }else if(top>HIGH&&highSounding){
-    if(setVoice('u3',top,'manual',topAmp(top),2.4,rel))V.pulse(3);
-    orgel.highPending=false;
-    later(function(){if(!playing||curChord!==c)return;
-      if(Math.random()<0.35){orgel.highPending=true;}
-      else{setVoice('u3',null,'manual',0,att,rel*1.3);highSounding=false;orgel.highPending=false;if(orgel.voicing)orgel.voicing.upper[3]=top-12;}
-    },D*(0.5+Math.random()*0.15));
-  }else{
-    if(setVoice('u3',top,'manual',ampFor(top),att,rel))V.pulse(3);
-    highSounding=false;orgel.highPending=false;
-  }
+  orgel.highPending=dim&&up[3]>HIGH;
   var b=c.voicing.bass,ped=S.pedale;
   var changedBass=setVoice('bass',ped>0?b:null,'pedal',0.11*duck,att*1.3,rel*1.2);
   setVoice('sub',ped>1&&b!=null?b-12:null,'sub',0.085,att*1.6,rel*1.3);
@@ -1088,7 +1073,7 @@ function sound(c,D){
   if(voices.treble){
     // it entered in the last chord: resolve by step into this one, hold at least halfway, then let go
     var cur=voices.treble.midi,best=tre,bd=99;
-    for(var mm=cur-2;mm<=cur+2;mm++){if(c.pcs.indexOf(((mm%12)+12)%12)>=0&&Math.abs(mm-cur)<bd){bd=Math.abs(mm-cur);best=mm;}}
+    for(var mm=cur-6;mm<=cur+6;mm++){if(((mm%12)+12)%12===c.root&&mm>c.voicing.upper[3]&&Math.abs(mm-cur)<bd){bd=Math.abs(mm-cur);best=mm;}}
     if(setVoice('treble',best,'manual',0.03*duck,2.4,rel*1.2))V.pulse(3);
     later(function(){if(playing&&curChord===c)setVoice('treble',null,'manual',0,1,rel*1.4);},D*(0.5+Math.random()*0.2));
   }else if((peak||arrival)&&Math.random()<0.3){
@@ -1143,7 +1128,7 @@ function start(){
   if(organ.ctx.state!=='running')organ.ctx.resume();
   organ.apply();
   organ.fade(0.9,2.5);
-  playing=true;ending=false;startAt=Date.now();highSounding=false;
+  playing=true;ending=false;startAt=Date.now();
   orgel.set({key:S.key,mode:S.mode,aetherium:S.aetherium,pedale:S.pedale});orgel.reset();
   document.body.classList.add('playing');
   ui();V.wake();holdAwake();
