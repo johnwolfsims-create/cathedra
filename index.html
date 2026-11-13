@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#060505">
 <title>Cathedra</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -80,7 +80,7 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 // iOS home-screen apps sometimes report a viewport shorter than the screen (by the status bar height);
 // measure the missing strip and extend the nave over it.
 (function(){function fix(){var st=navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
-  var g=st&&innerHeight>innerWidth?Math.max(0,screen.height-innerHeight):0;if(g>90)g=0;
+  var g=0;
   document.documentElement.style.setProperty('--gap',g+'px');window.__gap=g;}
   fix();addEventListener('resize',fix);addEventListener('orientationchange',function(){setTimeout(fix,300);});})();
 </script>
@@ -1364,7 +1364,7 @@ var V=(function(){
     function one(v,alpha){
       if(!v||alpha<=0)return;
       var px=W/2-v.w/2;
-      x.globalCompositeOperation='source-over';x.globalAlpha=alpha*(0.55+0.45*L);
+      x.globalCompositeOperation='source-over';x.globalAlpha=alpha*(0.75+0.25*L);
       x.drawImage(v.base,px,y,v.w,v.h);
       // the shimmer: a slow band of light passing over the bronze, stronger as the window brightens
       var sc=v.sctx,bw=v.shine.width,bh=v.shine.height,pos=((t*0.09)%1.6-0.3)*bw;
@@ -1567,12 +1567,13 @@ var V=(function(){
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight+(window.__gap||0);cv.width=W*DPR;cv.height=H*DPR;
     // the reading sits under the season line; the window's pointed arch begins below it
-    var sb=0;try{sb=document.getElementById('season').getBoundingClientRect().bottom;}catch(e){}
+    var ct=0;try{ct=cv.getBoundingClientRect().top||0;}catch(e){}
+    var sb=0;try{sb=document.getElementById('season').getBoundingClientRect().bottom-ct;}catch(e){}
     if(!sb||sb<20)sb=34;
     verseTop=sb+2;
     var s=0.6,top;
     // the window ends a little above the controls, wherever the phone puts them
-    var pt=0;try{var pn=document.getElementById('panel'),ti=document.getElementById('intro');pt=pn.getBoundingClientRect().top;
+    var pt=0;try{var pn=document.getElementById('panel'),ti=document.getElementById('intro');pt=pn.getBoundingClientRect().top-ct;
       if(ti&&ti.hidden){pt-=76;}}catch(e){}
     if(!pt||pt<H*0.45)pt=H-250;
     var bottomLimit=pt-34;
