@@ -155,7 +155,7 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 
   <h2>ambitus</h2>
   <div id="ambSliders"></div>
-  <p class="note">The life of the building around the organ. All off unless you raise them. The candles crackle only when they are lit — at night, with motus caeli on.</p>
+  <p class="note">The life of the building around the organ. All off unless you raise them. Raising Cerei lights the candelabra by the pillars, day or night.</p>
 
   <h2>pedale</h2>
   <div class="chips" id="pedale"></div>
@@ -807,14 +807,17 @@ G.Organ = Organ;
 (function () {
 'use strict';
 function loopBuffer(ctx, seconds, fill) {
-  var sr = ctx.sampleRate, n = Math.floor(seconds * sr), b = ctx.createBuffer(2, n, sr);
-  for (var ch = 0; ch < 2; ch++) fill(b.getChannelData(ch), sr, n, ch);
-  // crossfade the ends so the loop has no seam
-  for (ch = 0; ch < 2; ch++) { var d = b.getChannelData(ch), f = Math.floor(0.5 * sr);
-    for (var i = 0; i < f; i++) { var k = i / f; d[i] = d[i] * k + d[n - f + i] * (1 - k); } }
+  var sr = ctx.sampleRate, n = Math.floor(seconds * sr), f = Math.floor(1.5 * sr), m = n - f;
+  var b = ctx.createBuffer(2, m, sr), tmp = new Float32Array(n);
+  for (var ch = 0; ch < 2; ch++) {
+    fill(tmp, sr, n, ch);
+    var out = b.getChannelData(ch);
+    for (var i = 0; i < m; i++) out[i] = tmp[i];
+    for (i = 0; i < f; i++) { var k = Math.sin(0.5 * Math.PI * i / f); out[i] = tmp[i] * k + tmp[m + i] * Math.cos(0.5 * Math.PI * i / f); }
+  }
   return b;
 }
-function brown(d, sr, n) { var y = 0; for (var i = 0; i < n; i++) { y = (y + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = y * 3.5; } }
+function brown(d, sr, n) { var y = 0; for (var i = 0; i < n; i++) { y = (y + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = y * 3.5; } var mean = 0; for (i = 0; i < n; i++) mean += d[i]; mean /= n; for (i = 0; i < n; i++) d[i] -= mean; }
 function pink(d, sr, n) { var b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
   for (var i = 0; i < n; i++) { var w = Math.random() * 2 - 1;
     b0 = .99886 * b0 + w * .0555179; b1 = .99332 * b1 + w * .0750759; b2 = .969 * b2 + w * .153852; b3 = .8665 * b3 + w * .3104856; b4 = .55 * b4 + w * .5329522; b5 = -.7616 * b5 - w * .016898;
@@ -833,31 +836,35 @@ Organ.prototype.ambitus = function (lv, candlesLit) {
     A = this.amb = {};
     A.bus = ctx.createGain(); A.bus.gain.value = 1; A.bus.connect(this.comp);
     A.far = ctx.createGain(); A.far.gain.value = 1;              // distant sounds: mostly reverb
-    var farDry = ctx.createGain(); farDry.gain.value = 0.18; A.far.connect(farDry); farDry.connect(A.bus);
-    var farWet = ctx.createGain(); farWet.gain.value = 1.4; A.far.connect(farWet);
+    var farDry = ctx.createGain(); farDry.gain.value = 0.25; A.far.connect(farDry); farDry.connect(A.bus);
+    var farWet = ctx.createGain(); farWet.gain.value = 2.0; A.far.connect(farWet);
     farWet.connect(this.convs[0]); farWet.connect(this.convs[1]);
     // room tone: the low hush of air in stone, and a faint breath of the high vault
-    var src = ctx.createBufferSource(); src.buffer = loopBuffer(ctx, 9, brown); src.loop = true;
-    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240;
-    A.air = ctx.createGain(); A.air.gain.value = 0; src.connect(lp); lp.connect(A.air); A.air.connect(A.bus);
-    var src2 = ctx.createBufferSource(); src2.buffer = loopBuffer(ctx, 7, pink); src2.loop = true;
+    A.air = ctx.createGain(); A.air.gain.value = 0; A.air.connect(A.bus);
+    var breathe = ctx.createGain(); breathe.gain.value = 1; breathe.connect(A.air);
+    var drift = ctx.createOscillator(); drift.frequency.value = 0.043; var dg = ctx.createGain(); dg.gain.value = 0.18; drift.connect(dg); dg.connect(breathe.gain);
+    [[23, 230], [17.3, 180]].forEach(function (L, i) {
+      var s = ctx.createBufferSource(); s.buffer = loopBuffer(ctx, L[0], brown); s.loop = true;
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = L[1];
+      var g = ctx.createGain(); g.gain.value = 0.7; s.connect(lp); lp.connect(g); g.connect(breathe); s.start(0, Math.random() * L[0] * 0.5);
+    });
+    var src2 = ctx.createBufferSource(); src2.buffer = loopBuffer(ctx, 19, pink); src2.loop = true;
     var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.4;
-    var hiss = ctx.createGain(); hiss.gain.value = 0.08; src2.connect(bp); bp.connect(hiss); hiss.connect(A.air);
-    var drift = ctx.createOscillator(); drift.frequency.value = 0.05; var dg = ctx.createGain(); dg.gain.value = 0.2; drift.connect(dg); dg.connect(A.air.gain);
-    src.start(); src2.start(); drift.start();
+    var hiss = ctx.createGain(); hiss.gain.value = 0.08; src2.connect(bp); bp.connect(hiss); hiss.connect(breathe);
+    src2.start(0, Math.random() * 8); drift.start();
     // rain on the roof, muffled by stone and timber
-    var rs = ctx.createBufferSource(); rs.buffer = loopBuffer(ctx, 11, rain); rs.loop = true;
+    var rs = ctx.createBufferSource(); rs.buffer = loopBuffer(ctx, 21, rain); rs.loop = true;
     var rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 300;
     var rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 2600;
     A.rain = ctx.createGain(); A.rain.gain.value = 0; rs.connect(rhp); rhp.connect(rlp); rlp.connect(A.rain); A.rain.connect(A.bus);
     var rsend = ctx.createGain(); rsend.gain.value = 0.25; A.rain.connect(rsend); rsend.connect(this.convs[0]); rsend.connect(this.convs[1]);
     rs.start(Math.random() * 5);
-    A.lv = {}; A.nextFar = ctx.currentTime + 20 + Math.random() * 30; A.nextCrackle = 0;
+    A.lv = {}; A.nextFar = ctx.currentTime + 6 + Math.random() * 10; A.nextCrackle = 0;
     setInterval(function () { self.ambTick(); }, 200);
   }
   A.lv = lv; A.candles = !!candlesLit;
   var t = ctx.currentTime;
-  A.air.gain.setTargetAtTime(0.11 * (lv.aer || 0), t, 0.8);
+  A.air.gain.setTargetAtTime(0.028 * (lv.aer || 0), t, 0.8);
   A.rain.gain.setTargetAtTime(0.14 * (lv.pluvia || 0), t, 1.2);
 };
 
@@ -868,14 +875,14 @@ Organ.prototype.ambTick = function () {
   if ((lv.cerei || 0) > 0 && A.candles) {
     while (A.nextCrackle < t + 0.25) {
       if (A.nextCrackle > t) this.crackle(A.nextCrackle, lv.cerei);
-      A.nextCrackle = Math.max(A.nextCrackle, t) + (-Math.log(Math.random())) * 0.55;
+      A.nextCrackle = Math.max(A.nextCrackle, t) + (-Math.log(Math.random())) * 0.4;
     }
   } else A.nextCrackle = t;
   // far away: footsteps, a pew, a door
   if ((lv.longinqua || 0) > 0 && t >= A.nextFar) {
     var r = Math.random(), a = lv.longinqua;
     if (r < 0.55) this.footsteps(t + 0.1, a); else if (r < 0.8) this.creak(t + 0.1, a); else this.door(t + 0.1, a);
-    A.nextFar = t + 35 + Math.random() * 75;
+    A.nextFar = t + (60 - 45 * a) + Math.random() * (80 - 55 * a);
   } else if (!(lv.longinqua > 0)) A.nextFar = t + 10;
 };
 
@@ -896,7 +903,7 @@ Organ.prototype.thump = function (when, f, dur, amp, dest) {
 Organ.prototype.crackle = function (when, lv) {
   var pop = Math.random() < 0.07;
   this.burst(when, pop ? 0.03 : 0.008 + Math.random() * 0.01, 'bandpass', pop ? 1300 : 2500 + Math.random() * 3500, 1.2,
-    lv * (pop ? 0.05 : 0.02 + Math.random() * 0.025), this.amb.bus, (Math.random() - .5) * 0.8);
+    lv * (pop ? 0.13 : 0.05 + Math.random() * 0.06), this.amb.bus, (Math.random() - .5) * 0.8);
 };
 Organ.prototype.footsteps = function (when, lv) {
   var n = 5 + Math.floor(Math.random() * 5), gap = 0.58 + Math.random() * 0.1, from = Math.random() < .5 ? -0.8 : 0.8;
@@ -1417,7 +1424,7 @@ function build(){
   [['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
     var row=document.createElement('label');row.className='slider';
     row.innerHTML='<span><b>'+d[1]+'</b><small>'+d[2]+'</small></span><input type="range" min="0" max="1" step="0.01" value="'+S[d[0]]+'" aria-label="'+d[1]+'">';
-    row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
+    row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();if(d[0]==='cerei')V.relight();};
     $('ambSliders').appendChild(row);
   });
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
@@ -1912,7 +1919,8 @@ var V=(function(){
     var pw=pillarL.w,a=(0.03+0.3*L).toFixed(3);
     var p1=x.createLinearGradient(pw*0.45,0,pw,0);p1.addColorStop(0,'rgba('+rgb+',0)');p1.addColorStop(1,'rgba('+rgb+','+a+')');x.fillStyle=p1;x.fillRect(0,0,pw,H);
     var p2=x.createLinearGradient(W-pw*0.45,0,W-pw,0);p2.addColorStop(0,'rgba('+rgb+',0)');p2.addColorStop(1,'rgba('+rgb+','+a+')');x.fillStyle=p2;x.fillRect(W-pw,0,pw,H);
-    drawCandles(x,t,skyS.night*(1-0.85*endDark),'body');
+    var candleA=Math.max(skyS.night,(S.cerei||0)>0?1:0);
+    drawCandles(x,t,candleA*(1-0.85*endDark),'body');
     // the tide: darkness pressing in from the edges, pushed back by every swell
     x.globalCompositeOperation='source-over';
     var cx=W/2,cy=geo.oy+geo.h*0.5,reach=(geo.w*(0.55+1.05*L+0.35*bloom)+6*wind)*(1-0.35*skyS.night)*(1-0.7*endDark)+4;
@@ -1923,7 +1931,7 @@ var V=(function(){
     x.drawImage(vign,0,0,W,H);
     // re-light the glass itself so the dark never dims the window
     x.globalAlpha=Math.min(1,(0.35+0.5*L)*(1-endDark));x.drawImage(glass,geo.ox,geo.oy,geo.w,geo.h);x.globalAlpha=1;
-    drawCandles(x,t,skyS.night*(1-0.85*endDark),'light');
+    drawCandles(x,t,candleA*(1-0.85*endDark),'light');
     // dust catching the light
     x.globalCompositeOperation='lighter';
     var dt=Math.min(0.05,t-(lastT||t));lastT=t;
@@ -1948,7 +1956,7 @@ var V=(function(){
   return {palette:setPalette,chord:chord,pulse:pulse,resolve:function(){resolveT=now();},
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
     end:function(){endT=now();awake=false;},relight:function(){skyT=-99;},
-    candlesLit:function(){return skyS.night>0.3;},
+    candlesLit:function(){return skyS.night>0.3||(S.cerei||0)>0;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
     intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
     tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){}};
