@@ -18,10 +18,10 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Alegreya,Georgia,serif;overflow:hidden;overscroll-behavior:none}
 [hidden]{display:none!important}
-#nave{position:fixed;inset:0;width:100%;height:100%;display:block}
+#nave{position:fixed;top:0;left:0;width:100%;height:calc(100% + var(--gap,0px));display:block}
 .sc{font-family:'Alegreya SC',Georgia,serif;letter-spacing:.2em;font-size:13px}
 #season{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;margin:0;height:20px;line-height:20px;text-align:center;color:#B7AE9F;pointer-events:none}
-#panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px - var(--gap,0px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
 #panel > *{pointer-events:auto}
 #title{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;color:#F2EADA;text-shadow:0 0 24px rgba(120,100,200,.45);transition:opacity 1.6s}
 #motto{margin:0;font-family:'Pfeffer',Fondamento,serif;font-style:italic;font-size:17px;color:#B7AE9F;transition:opacity 1.6s}
@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 #ordoBtn{width:58px;height:48px;border:none;background:none;color:#9C958A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-family:'Alegreya SC',serif;font-size:12px;letter-spacing:.08em}
 #modeline{color:#9C958A;margin-top:6px;font-size:12px}
 /* Ordo sheet */
-#sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(9,8,7,.95);border-top:1px solid rgba(217,180,90,.35);border-radius:22px 22px 0 0;padding:22px 22px calc(env(safe-area-inset-bottom) + 28px);transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#sheet{position:fixed;left:0;right:0;bottom:calc(0px - var(--gap,0px));max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(9,8,7,.95);border-top:1px solid rgba(217,180,90,.35);border-radius:22px 22px 0 0;padding:22px 22px calc(env(safe-area-inset-bottom) + 28px);transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #sheet.open{transform:none}
 #sheet h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:36px}
 #sheet .sub{margin:2px 0 0;font-family:'Pfeffer',Fondamento,serif;font-style:italic;color:var(--muted)}
@@ -61,7 +61,7 @@ input[type=range]::-moz-range-track{height:3px;background:rgba(233,226,211,.25)}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:#E8C877}
 
 /* the gate: darkness, the window waking, a touch to enter */
-#gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 137px);cursor:pointer;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
+#gate{position:fixed;top:0;left:0;right:0;height:calc(100% + var(--gap,0px));z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 137px);cursor:pointer;box-sizing:border-box;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
 #gate.gone{opacity:0;pointer-events:none}
 #gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;
   background:linear-gradient(100deg,#7a5426 0%,#c9a160 30%,#fff1cf 45%,#c9a160 60%,#7a5426 100%);background-size:250% 100%;
@@ -76,6 +76,14 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 </style>
 </head>
 <body class="intro">
+<script>
+// iOS home-screen apps sometimes report a viewport shorter than the screen (by the status bar height);
+// measure the missing strip and extend the nave over it.
+(function(){function fix(){var st=navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  var g=st&&innerHeight>innerWidth?Math.max(0,screen.height-innerHeight):0;if(g>90)g=0;
+  document.documentElement.style.setProperty('--gap',g+'px');window.__gap=g;}
+  fix();addEventListener('resize',fix);addEventListener('orientationchange',function(){setTimeout(fix,300);});})();
+</script>
 <canvas id="nave" aria-hidden="true"></canvas>
 <button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
@@ -1557,7 +1565,7 @@ var V=(function(){
     return Math.max(aura,bd<1?0.55*Math.pow(1-bd*bd,1.2)*Math.min(1,k*3):0);
   }
   function resize(){
-    DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;
+    DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight+(window.__gap||0);cv.width=W*DPR;cv.height=H*DPR;
     // the reading sits under the season line; the window's pointed arch begins below it
     var sb=0;try{sb=document.getElementById('season').getBoundingClientRect().bottom;}catch(e){}
     if(!sb||sb<20)sb=34;
