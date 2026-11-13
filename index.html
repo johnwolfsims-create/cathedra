@@ -1565,7 +1565,7 @@ var V=(function(){
     return Math.max(aura,bd<1?0.55*Math.pow(1-bd*bd,1.2)*Math.min(1,k*3):0);
   }
   function resize(){
-    DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight+(window.__gap||0);cv.width=W*DPR;cv.height=H*DPR;
+    DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight+(window.__gap||0);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
     // the reading sits under the season line; the window's pointed arch begins below it
     var ct=0;try{ct=cv.getBoundingClientRect().top||0;}catch(e){}
     var sb=0;try{sb=document.getElementById('season').getBoundingClientRect().bottom-ct;}catch(e){}
@@ -1740,6 +1740,17 @@ setInterval(lectio,50000);
 if(document.fonts&&document.fonts.load){document.fonts.load("20px 'Pfeffer'").then(function(){V.refont();});}
 
 build();ui();
+// a hidden measuring tape for odd phones: tap the season line three times
+(function(){var n=0,t0=0;$('season').style.pointerEvents='auto';$('season').addEventListener('click',function(){var t=Date.now();n=t-t0<600?n+1:1;t0=t;if(n<3)return;n=0;
+  var d=document.getElementById('diag');if(d){d.remove();return;}
+  var c=$('nave').getBoundingClientRect(),p=$('panel').getBoundingClientRect(),cs=getComputedStyle(document.documentElement);
+  var probe=document.createElement('div');probe.style.cssText='position:fixed;top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom);left:0;width:1px';document.body.appendChild(probe);var pr=probe.getBoundingClientRect();probe.remove();
+  d=document.createElement('pre');d.id='diag';d.style.cssText='position:fixed;left:10px;right:10px;top:40%;z-index:99;background:rgba(0,0,0,.85);color:#9f9;font:12px monospace;padding:10px;white-space:pre-wrap';
+  d.textContent=['inner '+innerWidth+'x'+innerHeight,'screen '+screen.width+'x'+screen.height,'vv '+(window.visualViewport?Math.round(visualViewport.width)+'x'+Math.round(visualViewport.height)+' top '+Math.round(visualViewport.offsetTop):'-'),
+    'clientH '+document.documentElement.clientHeight,'standalone '+(navigator.standalone||matchMedia('(display-mode: standalone)').matches),
+    'canvas top '+Math.round(c.top)+' h '+Math.round(c.height),'panel top '+Math.round(p.top)+' bottom '+Math.round(p.bottom),
+    'safe top '+Math.round(pr.top)+' bottom '+Math.round(innerHeight-pr.bottom),'gap '+(window.__gap||0)].join('\n');
+  document.body.appendChild(d);});})();
 // the gate: the window wakes in the dark; one touch rings a bell and opens the nave
 V.intro();
 $('gate').onclick=function(){
