@@ -155,7 +155,7 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 
   <h2>ambitus</h2>
   <div id="ambSliders"></div>
-  <p class="note">The life of the building around the organ. All off unless you raise them. Raising Cerei lights the candelabra by the pillars, day or night.</p>
+  <p class="note">The life of the building around the organ. All off unless you raise them.</p>
 
   <h2>pedale</h2>
   <div class="chips" id="pedale"></div>
@@ -1424,10 +1424,10 @@ function build(){
   [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
   [['tonus','in tono'],['C','in C, historice']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.tuneOn=this.dataset.v;retune();save();ui();};$('tuneOn').appendChild(b);});
   [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
-  [['ambitus','Ambitus','all the sounds of the nave together'],['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
+  [['ambitus','Ambitus','all the sounds of the nave together'],['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling (only when the candles are lit: at night, with motus caeli on)'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
     var row=document.createElement('label');row.className='slider';
     row.innerHTML='<span><b>'+d[1]+'</b><small>'+d[2]+'</small></span><input type="range" min="0" max="1" step="0.01" value="'+S[d[0]]+'" aria-label="'+d[1]+'">';
-    row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();if(d[0]==='cerei')V.relight();};
+    row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
     $('ambSliders').appendChild(row);
   });
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
@@ -1922,7 +1922,7 @@ var V=(function(){
     var pw=pillarL.w,a=(0.03+0.3*L).toFixed(3);
     var p1=x.createLinearGradient(pw*0.45,0,pw,0);p1.addColorStop(0,'rgba('+rgb+',0)');p1.addColorStop(1,'rgba('+rgb+','+a+')');x.fillStyle=p1;x.fillRect(0,0,pw,H);
     var p2=x.createLinearGradient(W-pw*0.45,0,W-pw,0);p2.addColorStop(0,'rgba('+rgb+',0)');p2.addColorStop(1,'rgba('+rgb+','+a+')');x.fillStyle=p2;x.fillRect(W-pw,0,pw,H);
-    var candleA=Math.max(skyS.night,(S.cerei||0)>0?1:0);
+    var candleA=skyS.night;
     drawCandles(x,t,candleA*(1-0.85*endDark),'body');
     // the tide: darkness pressing in from the edges, pushed back by every swell
     x.globalCompositeOperation='source-over';
@@ -1959,7 +1959,7 @@ var V=(function(){
   return {palette:setPalette,chord:chord,pulse:pulse,resolve:function(){resolveT=now();},
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
     end:function(){endT=now();awake=false;},relight:function(){skyT=-99;},
-    candlesLit:function(){return skyS.night>0.3||(S.cerei||0)>0;},
+    candlesLit:function(){return skyS.night>0.3;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
     intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
     tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){}};
