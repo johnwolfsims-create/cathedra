@@ -146,7 +146,8 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 
   <h2>temperamentum</h2>
   <div class="chips" id="temper"></div>
-  <p class="note">How the pipes are tuned against each other, centered on your home key. Werckmeister: Bach's era; near keys sweeter, distant ones tenser. Mesotonicus: Renaissance meantone; pure, glowing thirds, but a few remote chords turn sour. Pythagoricus: medieval pure fifths; open and austere. Aequalis: modern equal tuning.</p>
+  <div class="chips" id="tuneOn" style="margin-top:8px"></div>
+  <p class="note">How the pipes are tuned against each other. <i>In tono</i>: centered on your home key, so home is always the purest place. <i>In C, historice</i>: tuned on C as the old organs were, so every key keeps its own color — F minor dark and aching, A minor warm. Werckmeister: Bach's era; near keys sweeter, distant ones tenser. Mesotonicus: Renaissance meantone; pure, glowing thirds, but a few remote chords turn sour. Pythagoricus: medieval pure fifths; open and austere. Aequalis: modern equal tuning.</p>
 
   <h2>diapason</h2>
   <div class="chips" id="diapason"></div>
@@ -1003,7 +1004,7 @@ G.Lectio = { readings: readings, pretty: pretty };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1039,7 +1040,7 @@ function seasonNow(){return S.season==='auto'?liturgical(new Date()):S.season;}
 window.__mk=1;var orgel=new Orgel({key:S.key,mode:S.mode,aetherium:S.aetherium,pedale:S.pedale});
 var organ=new Organ();window.__organ=organ;window.__orgel=orgel;
 organ.p.spiritus=S.spiritus;organ.p.color=S.color;organ.p.spatium=S.spatium;
-function retune(){organ.tune={temper:S.temper,key:S.key,a:S.diapason};}retune();
+function retune(){organ.tune={temper:S.temper,key:S.tuneOn==='C'?0:S.key,a:S.diapason};}retune();
 
 var lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
 var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble','oct0','oct1','oct2','oct3'];
@@ -1257,6 +1258,7 @@ function ui(){
   [].forEach.call($('durata').children,function(b){b.classList.toggle('on',+b.dataset.v===S.durata);});
   $('angelusBtn').classList.toggle('on',!!S.angelus);
   [].forEach.call($('temper').children,function(b){b.classList.toggle('on',b.dataset.v===S.temper);});
+  [].forEach.call($('tuneOn').children,function(b){b.classList.toggle('on',b.dataset.v===S.tuneOn);});$('tuneOn').hidden=S.temper==='aequalis';
   [].forEach.call($('diapason').children,function(b){b.classList.toggle('on',+b.dataset.v===S.diapason);});
   [].forEach.call($('lux').children,function(b){b.classList.toggle('on',b.dataset.v===S.lux);});
   $('caeliBtn').classList.toggle('on',!!S.caeli);$('lux').hidden=!S.caeli;
@@ -1284,6 +1286,7 @@ function build(){
   });
   [['auto','ex sole'],['mane','mane'],['meridies','meridies'],['vespera','vespera'],['nox','nox']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.lux=this.dataset.v;save();ui();V.relight();};$('lux').appendChild(b);});
   [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
+  [['tonus','in tono'],['C','in C, historice']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.tuneOn=this.dataset.v;retune();save();ui();};$('tuneOn').appendChild(b);});
   [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
   [[10,'x'],[20,'xx'],[30,'xxx'],[0,'sine fine']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.durata=+this.dataset.v;orgel.wantEnd=false;save();ui();};$('durata').appendChild(b);});
