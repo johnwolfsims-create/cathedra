@@ -1014,7 +1014,7 @@ var organ=new Organ();window.__organ=organ;window.__orgel=orgel;
 organ.p.spiritus=S.spiritus;organ.p.color=S.color;organ.p.spatium=S.spatium;
 
 var lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
-var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble'];
+var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble','oct0','oct1','oct2','oct3'];
 
 function chordDur(){var D=30-24*S.tempus;return D*(0.82+Math.random()*0.36);}
 function later(fn,s){var id=setTimeout(fn,s*1000);timers.push(id);return id;}
@@ -1068,7 +1068,17 @@ function sound(c,D){
   var arrival=c.isHome&&!c.restAgain&&orgel.history.length>1&&prevT>0.55;
   var peak=!c.isHome&&T>=0.7&&!Orgel.DIMS[c.kind];
   var tre=trebleNote(c);
-  if(voices.treble){
+  // the octave stop: at the very greatest homecomings, a soft 4' rank doubles the whole chord above,
+  // swelling in and out within the chord. Rarer than the crown, and the crown sits out while it sounds.
+  var octave=(arrival&&prevT>=0.8&&Math.random()<0.18)||(c.final&&Math.random()<0.5);
+  if(octave){
+    later(function(){if(!playing||curChord!==c)return;
+      for(var k=0;k<4;k++){var m=c.voicing.upper[k]+12;if(m<=96)setVoice('oct'+k,m,'manual',ampFor(m)*0.32*duck,4.5,4);}
+      V.release(0.35);
+    },D*0.22);
+    later(function(){if(!playing||curChord!==c)return;for(var k=0;k<4;k++)setVoice('oct'+k,null,'manual',0,1,4.5);},D*0.72);
+    if(voices.treble)setVoice('treble',null,'manual',0,1,3);
+  }else if(voices.treble){
     // it entered in the last chord: resolve by step into this one, hold at least halfway, then let go
     // the crown moves to the new tonic if it's a step away; if the tonic is further, the fifth when it's closer
     var cur=voices.treble.midi,top3=c.voicing.upper[3];
@@ -1077,7 +1087,7 @@ function sound(c,D){
     if(rN&&rN.d<=2)best=rN.m;else if(fN&&(!rN||fN.d<rN.d))best=fN.m;else if(rN)best=rN.m;
     if(setVoice('treble',best,'manual',0.03*duck,2.4,rel*1.2))V.pulse(3);
     later(function(){if(playing&&curChord===c)setVoice('treble',null,'manual',0,1,rel*1.4);},D*(0.5+Math.random()*0.2));
-  }else if((peak||arrival)&&Math.random()<0.3){
+  }else if(!octave&&(peak||arrival)&&Math.random()<0.3){
     later(function(){if(playing&&curChord===c&&setVoice('treble',tre,'manual',0.028*duck,4,rel*1.2))V.pulse(3);},D*(0.45+Math.random()*0.1));
   }
   V.chord(c);
