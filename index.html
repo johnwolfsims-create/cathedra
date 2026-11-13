@@ -874,7 +874,7 @@ Organ.prototype.ambitus = function (lv, candlesLit) {
   A.lv = lv; A.candles = !!candlesLit;
   var t = ctx.currentTime, mv = lv.ambitus == null ? 1 : lv.ambitus;
   A.master.gain.setTargetAtTime(mv, t, 0.3); A.farMaster.gain.setTargetAtTime(mv, t, 0.3);
-  A.air.gain.setTargetAtTime(0.028 * (lv.aer || 0), t, 0.8);
+  A.air.gain.setTargetAtTime(0.11 * (lv.aer || 0), t, 0.8);
   A.rain.gain.setTargetAtTime(0.14 * (lv.pluvia || 0), t, 1.2);
 };
 
