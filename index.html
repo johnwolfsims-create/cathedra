@@ -85,6 +85,11 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.45}}
 body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 #panel,#season{transition:opacity 2s ease}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:44px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary h2{margin:16px 0 6px!important}
+details.fold>summary::after{content:'';width:9px;height:9px;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);transform:rotate(45deg);margin:6px 6px 0 0;transition:transform .3s}
+details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
 .note{color:var(--muted);font-size:14px;line-height:1.4;margin:8px 0 0}
 </style>
 </head>
@@ -141,8 +146,9 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
   <div class="chips" id="lux" style="margin-top:8px"></div>
   <p class="note">Off: only the window and its light, as always. On: the window follows the real sky — cool at dawn, gold at noon, amber at evening, and at night a dark window with stars and candles in the nave. The hours let you preview it.</p>
 
-  <h2>sonus</h2>
+  <details class="fold"><summary><h2>sonus</h2></summary>
   <div id="sliders"></div>
+  </details>
 
   <h2>temperamentum</h2>
   <div class="chips" id="temper"></div>
@@ -153,9 +159,10 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
   <div class="chips" id="diapason"></div>
   <p class="note">The pitch of A. 415: baroque, darker. 466: Chorton, the high pitch of many German church organs in Bach's time.</p>
 
-  <h2>ambitus</h2>
+  <details class="fold"><summary><h2>ambitus</h2></summary>
   <div id="ambSliders"></div>
   <p class="note">The life of the building around the organ. All off unless you raise them.</p>
+  </details>
 
   <h2>pedale</h2>
   <div class="chips" id="pedale"></div>
