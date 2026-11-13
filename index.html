@@ -153,6 +153,10 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
   <div class="chips" id="diapason"></div>
   <p class="note">The pitch of A. 415: baroque, darker. 466: Chorton, the high pitch of many German church organs in Bach's time.</p>
 
+  <h2>ambitus</h2>
+  <div id="ambSliders"></div>
+  <p class="note">The life of the building around the organ. All off unless you raise them. The candles crackle only when they are lit — at night, with motus caeli on.</p>
+
   <h2>pedale</h2>
   <div class="chips" id="pedale"></div>
   <p class="note">16′ adds a deep root under the chord; plena adds the 32′ sub-octave and a soft fifth. Now and then the pedal holds the home note while the chords wander above it.</p>
@@ -799,6 +803,124 @@ Organ.mtof = mtof; Organ.TEMPER = TEMPER;
 G.Organ = Organ;
 })(window);
 
+/* ---- ambitus: the life of the building around the organ ---- */
+(function () {
+'use strict';
+function loopBuffer(ctx, seconds, fill) {
+  var sr = ctx.sampleRate, n = Math.floor(seconds * sr), b = ctx.createBuffer(2, n, sr);
+  for (var ch = 0; ch < 2; ch++) fill(b.getChannelData(ch), sr, n, ch);
+  // crossfade the ends so the loop has no seam
+  for (ch = 0; ch < 2; ch++) { var d = b.getChannelData(ch), f = Math.floor(0.5 * sr);
+    for (var i = 0; i < f; i++) { var k = i / f; d[i] = d[i] * k + d[n - f + i] * (1 - k); } }
+  return b;
+}
+function brown(d, sr, n) { var y = 0; for (var i = 0; i < n; i++) { y = (y + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = y * 3.5; } }
+function pink(d, sr, n) { var b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+  for (var i = 0; i < n; i++) { var w = Math.random() * 2 - 1;
+    b0 = .99886 * b0 + w * .0555179; b1 = .99332 * b1 + w * .0750759; b2 = .969 * b2 + w * .153852; b3 = .8665 * b3 + w * .3104856; b4 = .55 * b4 + w * .5329522; b5 = -.7616 * b5 - w * .016898;
+    d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * .5362) * 0.11; b6 = w * .115926; } }
+function rain(d, sr, n, ch) { pink(d, sr, n);
+  for (var i = 0; i < n; i++) d[i] *= 0.55;
+  // drops on the roof: tiny bright ticks, scattered
+  var drops = Math.floor(n / sr * 70);
+  for (var k = 0; k < drops; k++) { var at = Math.floor(Math.random() * (n - 400)), a = 0.15 + Math.random() * 0.5, dec = 30 + Math.random() * 120;
+    for (var j = 0; j < 300; j++) d[at + j] += (Math.random() * 2 - 1) * a * Math.exp(-j / dec); } }
+
+Organ.prototype.ambitus = function (lv, candlesLit) {
+  if (!this.ctx) return;
+  var ctx = this.ctx, A = this.amb, self = this;
+  if (!A) {
+    A = this.amb = {};
+    A.bus = ctx.createGain(); A.bus.gain.value = 1; A.bus.connect(this.comp);
+    A.far = ctx.createGain(); A.far.gain.value = 1;              // distant sounds: mostly reverb
+    var farDry = ctx.createGain(); farDry.gain.value = 0.18; A.far.connect(farDry); farDry.connect(A.bus);
+    var farWet = ctx.createGain(); farWet.gain.value = 1.4; A.far.connect(farWet);
+    farWet.connect(this.convs[0]); farWet.connect(this.convs[1]);
+    // room tone: the low hush of air in stone, and a faint breath of the high vault
+    var src = ctx.createBufferSource(); src.buffer = loopBuffer(ctx, 9, brown); src.loop = true;
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240;
+    A.air = ctx.createGain(); A.air.gain.value = 0; src.connect(lp); lp.connect(A.air); A.air.connect(A.bus);
+    var src2 = ctx.createBufferSource(); src2.buffer = loopBuffer(ctx, 7, pink); src2.loop = true;
+    var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.4;
+    var hiss = ctx.createGain(); hiss.gain.value = 0.08; src2.connect(bp); bp.connect(hiss); hiss.connect(A.air);
+    var drift = ctx.createOscillator(); drift.frequency.value = 0.05; var dg = ctx.createGain(); dg.gain.value = 0.2; drift.connect(dg); dg.connect(A.air.gain);
+    src.start(); src2.start(); drift.start();
+    // rain on the roof, muffled by stone and timber
+    var rs = ctx.createBufferSource(); rs.buffer = loopBuffer(ctx, 11, rain); rs.loop = true;
+    var rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 300;
+    var rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 2600;
+    A.rain = ctx.createGain(); A.rain.gain.value = 0; rs.connect(rhp); rhp.connect(rlp); rlp.connect(A.rain); A.rain.connect(A.bus);
+    var rsend = ctx.createGain(); rsend.gain.value = 0.25; A.rain.connect(rsend); rsend.connect(this.convs[0]); rsend.connect(this.convs[1]);
+    rs.start(Math.random() * 5);
+    A.lv = {}; A.nextFar = ctx.currentTime + 20 + Math.random() * 30; A.nextCrackle = 0;
+    setInterval(function () { self.ambTick(); }, 200);
+  }
+  A.lv = lv; A.candles = !!candlesLit;
+  var t = ctx.currentTime;
+  A.air.gain.setTargetAtTime(0.11 * (lv.aer || 0), t, 0.8);
+  A.rain.gain.setTargetAtTime(0.14 * (lv.pluvia || 0), t, 1.2);
+};
+
+Organ.prototype.ambTick = function () {
+  var A = this.amb, ctx = this.ctx; if (!A || !ctx || ctx.state !== 'running') return;
+  var t = ctx.currentTime, lv = A.lv;
+  // candles: little crackles, only while they are lit
+  if ((lv.cerei || 0) > 0 && A.candles) {
+    while (A.nextCrackle < t + 0.25) {
+      if (A.nextCrackle > t) this.crackle(A.nextCrackle, lv.cerei);
+      A.nextCrackle = Math.max(A.nextCrackle, t) + (-Math.log(Math.random())) * 0.55;
+    }
+  } else A.nextCrackle = t;
+  // far away: footsteps, a pew, a door
+  if ((lv.longinqua || 0) > 0 && t >= A.nextFar) {
+    var r = Math.random(), a = lv.longinqua;
+    if (r < 0.55) this.footsteps(t + 0.1, a); else if (r < 0.8) this.creak(t + 0.1, a); else this.door(t + 0.1, a);
+    A.nextFar = t + 35 + Math.random() * 75;
+  } else if (!(lv.longinqua > 0)) A.nextFar = t + 10;
+};
+
+Organ.prototype.burst = function (when, dur, filt, f, q, amp, dest, pan) {
+  var ctx = this.ctx, s = ctx.createBufferSource(); s.buffer = this.noise;
+  var bf = ctx.createBiquadFilter(); bf.type = filt; bf.frequency.value = f; bf.Q.value = q || 0.7;
+  var g = ctx.createGain(); g.gain.setValueAtTime(amp, when); g.gain.setTargetAtTime(0, when + 0.002, dur / 4);
+  s.connect(bf); bf.connect(g);
+  if (pan != null && ctx.createStereoPanner) { var p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); p.connect(dest); } else g.connect(dest);
+  s.start(when, Math.random() * 2); s.stop(when + dur * 2 + 0.05);
+};
+Organ.prototype.thump = function (when, f, dur, amp, dest) {
+  var ctx = this.ctx, o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.setValueAtTime(f * 1.4, when); o.frequency.exponentialRampToValueAtTime(f, when + 0.05);
+  g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(amp, when + 0.008); g.gain.setTargetAtTime(0, when + 0.01, dur / 4);
+  o.connect(g); g.connect(dest); o.start(when); o.stop(when + dur * 2);
+};
+Organ.prototype.crackle = function (when, lv) {
+  var pop = Math.random() < 0.07;
+  this.burst(when, pop ? 0.03 : 0.008 + Math.random() * 0.01, 'bandpass', pop ? 1300 : 2500 + Math.random() * 3500, 1.2,
+    lv * (pop ? 0.05 : 0.02 + Math.random() * 0.025), this.amb.bus, (Math.random() - .5) * 0.8);
+};
+Organ.prototype.footsteps = function (when, lv) {
+  var n = 5 + Math.floor(Math.random() * 5), gap = 0.58 + Math.random() * 0.1, from = Math.random() < .5 ? -0.8 : 0.8;
+  for (var i = 0; i < n; i++) {
+    var k = i / (n - 1), a = lv * 0.06 * Math.sin(Math.PI * (0.15 + 0.7 * k)), at = when + i * gap + (Math.random() - .5) * 0.04;
+    this.burst(at, 0.05, 'lowpass', 700, 0.7, a, this.amb.far, from * (1 - 2 * k));
+    this.thump(at, 80 + Math.random() * 15, 0.09, a * 0.8, this.amb.far);
+    this.burst(at + 0.11, 0.03, 'bandpass', 1800, 1, a * 0.35, this.amb.far, from * (1 - 2 * k));   // the heel, then the toe
+  }
+};
+Organ.prototype.creak = function (when, lv) {
+  var ctx = this.ctx, o = ctx.createOscillator(), bf = ctx.createBiquadFilter(), g = ctx.createGain(), dur = 0.6 + Math.random() * 0.6;
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(26 + Math.random() * 8, when); o.frequency.linearRampToValueAtTime(40 + Math.random() * 14, when + dur);
+  bf.type = 'bandpass'; bf.frequency.value = 650 + Math.random() * 300; bf.Q.value = 5;
+  g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(lv * 0.05, when + 0.12); g.gain.setTargetAtTime(0, when + dur * 0.7, 0.12);
+  o.connect(bf); bf.connect(g); g.connect(this.amb.far); o.start(when); o.stop(when + dur + 0.6);
+};
+Organ.prototype.door = function (when, lv) {
+  this.burst(when, 0.14, 'lowpass', 170, 0.7, lv * 0.14, this.amb.far, (Math.random() - .5));
+  this.thump(when, 52, 0.45, lv * 0.12, this.amb.far);
+  this.burst(when + 0.22 + Math.random() * 0.1, 0.02, 'bandpass', 3200, 2, lv * 0.035, this.amb.far, 0);   // the latch
+};
+})();
+
 </script>
 <script>
 /* Lectio: the readings of this week's Sunday Mass (USA Lectionary for Mass, 1998).
@@ -1004,7 +1126,7 @@ G.Lectio = { readings: readings, pretty: pretty };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1186,6 +1308,10 @@ function stop(natural){
   letSleep();V.dim();ui();
 }
 
+/* ---------------- ambitus ---------------- */
+function ambi(){if(organ.ctx)organ.ambitus({aer:S.aer,longinqua:S.longinqua,cerei:S.cerei,pluvia:S.pluvia},V.candlesLit());}
+setInterval(ambi,3000);
+
 /* ---------------- the Angelus ---------------- */
 var duck=1,ringing=false;
 function ringAngelus(preview){
@@ -1288,6 +1414,12 @@ function build(){
   [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
   [['tonus','in tono'],['C','in C, historice']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.tuneOn=this.dataset.v;retune();save();ui();};$('tuneOn').appendChild(b);});
   [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
+  [['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
+    var row=document.createElement('label');row.className='slider';
+    row.innerHTML='<span><b>'+d[1]+'</b><small>'+d[2]+'</small></span><input type="range" min="0" max="1" step="0.01" value="'+S[d[0]]+'" aria-label="'+d[1]+'">';
+    row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
+    $('ambSliders').appendChild(row);
+  });
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
   [[10,'x'],[20,'xx'],[30,'xxx'],[0,'sine fine']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.durata=+this.dataset.v;orgel.wantEnd=false;save();ui();};$('durata').appendChild(b);});
   $('caeliBtn').onclick=function(){S.caeli=!S.caeli;save();ui();V.relight();};
@@ -1816,6 +1948,7 @@ var V=(function(){
   return {palette:setPalette,chord:chord,pulse:pulse,resolve:function(){resolveT=now();},
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
     end:function(){endT=now();awake=false;},relight:function(){skyT=-99;},
+    candlesLit:function(){return skyS.night>0.3;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
     intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
     tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){}};
@@ -1851,7 +1984,7 @@ V.intro();
 $('gate').onclick=function(){
   if(document.body.classList.contains('entered'))return;
   document.body.classList.add('entered');
-  try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);}catch(e){}
+  try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
   V.enter();V.bell();
   $('gate').classList.add('gone');document.body.classList.remove('intro');
   setTimeout(function(){$('gate').hidden=true;},2400);
