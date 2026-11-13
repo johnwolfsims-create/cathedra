@@ -1072,8 +1072,11 @@ function sound(c,D){
   var tre=trebleNote(c);
   if(voices.treble){
     // it entered in the last chord: resolve by step into this one, hold at least halfway, then let go
-    var cur=voices.treble.midi,best=tre,bd=99;
-    for(var mm=cur-6;mm<=cur+6;mm++){if(((mm%12)+12)%12===c.root&&mm>c.voicing.upper[3]&&Math.abs(mm-cur)<bd){bd=Math.abs(mm-cur);best=mm;}}
+    // the crown moves to the new tonic if it's a step away; if the tonic is further, the fifth when it's closer
+    var cur=voices.treble.midi,top3=c.voicing.upper[3];
+    function nearest(pc){var b=null,bd=99;for(var mm=cur-7;mm<=cur+7;mm++){if(((mm%12)+12)%12===pc&&mm>top3&&Math.abs(mm-cur)<bd){bd=Math.abs(mm-cur);b=mm;}}return b==null?null:{m:b,d:bd};}
+    var rN=nearest(c.root),fN=nearest((c.root+7)%12),best=tre;
+    if(rN&&rN.d<=2)best=rN.m;else if(fN&&(!rN||fN.d<rN.d))best=fN.m;else if(rN)best=rN.m;
     if(setVoice('treble',best,'manual',0.03*duck,2.4,rel*1.2))V.pulse(3);
     later(function(){if(playing&&curChord===c)setVoice('treble',null,'manual',0,1,rel*1.4);},D*(0.5+Math.random()*0.2));
   }else if((peak||arrival)&&Math.random()<0.3){
