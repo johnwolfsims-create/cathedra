@@ -450,7 +450,7 @@ Orgel.prototype.voice = function (c, prev, bassPc) {
   });
   var best = [], self = this;
   var pu = prev ? prev.upper : null;
-  var prevDimHigh = !!(pu && this.cur && DIMS[this.cur.kind] && pu[3] > 72);
+  var mustResolveHigh = !!(pu && this.highPending);
   function cost(vs) {
     var k, cst = 0, have = vs.map(function (m) { return mod(m, 12); });
     for (k = 0; k < essential.length; k++) if (have.indexOf(essential[k]) < 0) {
@@ -474,7 +474,7 @@ Orgel.prototype.voice = function (c, prev, bassPc) {
     // diminished chords keep out of the treble...
     if (DIMS[c.kind] && vs[3] > 72) cst += 6 + (vs[3] - 72) * 3;
     // ...and if one did reach up there, the next chord must resolve it by step, up high
-    if (prevDimHigh && Math.abs(vs[3] - pu[3]) > 2) cst += 60;
+    if (mustResolveHigh && (vs[3] < 70 || Math.abs(vs[3] - pu[3]) > 2)) cst += 60;
     return cst;
   }
   var A = cands[0], B = cands[1], C = cands[2], D = cands[3];
@@ -1015,7 +1015,7 @@ window.__mk=1;var orgel=new Orgel({key:S.key,mode:S.mode,aetherium:S.aetherium,p
 var organ=new Organ();window.__organ=organ;window.__orgel=orgel;
 organ.p.spiritus=S.spiritus;organ.p.color=S.color;organ.p.spatium=S.spatium;
 
-var lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
+var highSounding=false,lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
 var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble'];
 
 function chordDur(){var D=30-24*S.tempus;return D*(0.82+Math.random()*0.36);}
@@ -1039,10 +1039,27 @@ function sound(c,D){
   var att=Math.max(1.2,Math.min(3.5,D*0.18)),rel=Math.max(1.8,Math.min(5,D*0.26));
   var up=c.voicing.upper.slice();
   if(c.sus)up[c.sus.voice]=c.sus.from;
-  var dim=Orgel.DIMS[c.kind];
-  for(var i=0;i<4;i++){
-    var hi=dim&&up[i]>72;
-    if(setVoice('u'+i,up[i],'manual',ampFor(up[i])*(hi?0.6:1),hi?att*1.6:att,rel)) V.pulse(i);
+  var dim=Orgel.DIMS[c.kind],HIGH=72,top=up[3];
+  for(var i=0;i<3;i++){
+    if(setVoice('u'+i,up[i],'manual',ampFor(up[i]),att,rel)) V.pulse(i);
+  }
+  // high notes never begin a chord cold: they enter halfway, resolve by step into the next chord,
+  // and are held at least halfway through it
+  var topAmp=function(m){return ampFor(m)*(m>HIGH?(dim?0.4:0.55):1);};
+  if(top>HIGH&&!highSounding){
+    if(c.sus&&c.sus.voice===3){top=c.voicing.upper[3];c.sus=null;}
+    setVoice('u3',null,'manual',0,att,rel);
+    later(function(){if(!playing||curChord!==c)return;if(setVoice('u3',top,'manual',topAmp(top),Math.max(3.5,att*1.6),rel))V.pulse(3);highSounding=true;orgel.highPending=true;},D*0.5);
+  }else if(top>HIGH&&highSounding){
+    if(setVoice('u3',top,'manual',topAmp(top),2.4,rel))V.pulse(3);
+    orgel.highPending=false;
+    later(function(){if(!playing||curChord!==c)return;
+      if(Math.random()<0.35){orgel.highPending=true;}
+      else{setVoice('u3',null,'manual',0,att,rel*1.3);highSounding=false;orgel.highPending=false;if(orgel.voicing)orgel.voicing.upper[3]=top-12;}
+    },D*(0.5+Math.random()*0.15));
+  }else{
+    if(setVoice('u3',top,'manual',ampFor(top),att,rel))V.pulse(3);
+    highSounding=false;orgel.highPending=false;
   }
   var b=c.voicing.bass,ped=S.pedale;
   var changedBass=setVoice('bass',ped>0?b:null,'pedal',0.11*duck,att*1.3,rel*1.2);
@@ -1068,13 +1085,14 @@ function sound(c,D){
   var arrival=c.isHome&&!c.restAgain&&orgel.history.length>1&&prevT>0.55;
   var peak=!c.isHome&&T>=0.7&&!Orgel.DIMS[c.kind];
   var tre=trebleNote(c);
-  if(arrival&&(voices.treble||Math.random()<0.4)){
-    if(setVoice('treble',tre,'manual',0.05*duck,2.4,rel*1.2))V.pulse(3);
-  }else{
-    setVoice('treble',null,'manual',0,1,rel*1.3);
-    if(peak&&Math.random()<0.3){
-      later(function(){if(playing&&curChord===c&&setVoice('treble',tre,'manual',0.045*duck,2.8,rel*1.2))V.pulse(3);},D*(0.42+Math.random()*0.12));
-    }
+  if(voices.treble){
+    // it entered in the last chord: resolve by step into this one, hold at least halfway, then let go
+    var cur=voices.treble.midi,best=tre,bd=99;
+    for(var mm=cur-2;mm<=cur+2;mm++){if(c.pcs.indexOf(((mm%12)+12)%12)>=0&&Math.abs(mm-cur)<bd){bd=Math.abs(mm-cur);best=mm;}}
+    if(setVoice('treble',best,'manual',0.03*duck,2.4,rel*1.2))V.pulse(3);
+    later(function(){if(playing&&curChord===c)setVoice('treble',null,'manual',0,1,rel*1.4);},D*(0.5+Math.random()*0.2));
+  }else if((peak||arrival)&&Math.random()<0.3){
+    later(function(){if(playing&&curChord===c&&setVoice('treble',tre,'manual',0.028*duck,4,rel*1.2))V.pulse(3);},D*(0.45+Math.random()*0.1));
   }
   V.chord(c);
   showChord(c);
@@ -1125,7 +1143,7 @@ function start(){
   if(organ.ctx.state!=='running')organ.ctx.resume();
   organ.apply();
   organ.fade(0.9,2.5);
-  playing=true;ending=false;startAt=Date.now();
+  playing=true;ending=false;startAt=Date.now();highSounding=false;
   orgel.set({key:S.key,mode:S.mode,aetherium:S.aetherium,pedale:S.pedale});orgel.reset();
   document.body.classList.add('playing');
   ui();V.wake();holdAwake();
