@@ -834,11 +834,13 @@ Organ.prototype.ambitus = function (lv, candlesLit) {
   var ctx = this.ctx, A = this.amb, self = this;
   if (!A) {
     A = this.amb = {};
-    A.bus = ctx.createGain(); A.bus.gain.value = 1; A.bus.connect(this.comp);
+    A.master = ctx.createGain(); A.master.gain.value = 1; A.master.connect(this.comp);
+    A.bus = ctx.createGain(); A.bus.gain.value = 1; A.bus.connect(A.master);
     A.far = ctx.createGain(); A.far.gain.value = 1;              // distant sounds: mostly reverb
     var farDry = ctx.createGain(); farDry.gain.value = 0.25; A.far.connect(farDry); farDry.connect(A.bus);
     var farWet = ctx.createGain(); farWet.gain.value = 2.0; A.far.connect(farWet);
-    farWet.connect(this.convs[0]); farWet.connect(this.convs[1]);
+    var farMaster = ctx.createGain(); farMaster.gain.value = 1; farWet.connect(farMaster); A.farMaster = farMaster;
+    farMaster.connect(this.convs[0]); farMaster.connect(this.convs[1]);
     // room tone: the low hush of air in stone, and a faint breath of the high vault
     A.air = ctx.createGain(); A.air.gain.value = 0; A.air.connect(A.bus);
     var breathe = ctx.createGain(); breathe.gain.value = 1; breathe.connect(A.air);
@@ -857,13 +859,14 @@ Organ.prototype.ambitus = function (lv, candlesLit) {
     var rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 300;
     var rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 2600;
     A.rain = ctx.createGain(); A.rain.gain.value = 0; rs.connect(rhp); rhp.connect(rlp); rlp.connect(A.rain); A.rain.connect(A.bus);
-    var rsend = ctx.createGain(); rsend.gain.value = 0.25; A.rain.connect(rsend); rsend.connect(this.convs[0]); rsend.connect(this.convs[1]);
+    var rsend = ctx.createGain(); rsend.gain.value = 0.25; A.rain.connect(rsend); rsend.connect(farMaster);
     rs.start(Math.random() * 5);
     A.lv = {}; A.nextFar = ctx.currentTime + 6 + Math.random() * 10; A.nextCrackle = 0;
     setInterval(function () { self.ambTick(); }, 200);
   }
   A.lv = lv; A.candles = !!candlesLit;
-  var t = ctx.currentTime;
+  var t = ctx.currentTime, mv = lv.ambitus == null ? 1 : lv.ambitus;
+  A.master.gain.setTargetAtTime(mv, t, 0.3); A.farMaster.gain.setTargetAtTime(mv, t, 0.3);
   A.air.gain.setTargetAtTime(0.028 * (lv.aer || 0), t, 0.8);
   A.rain.gain.setTargetAtTime(0.14 * (lv.pluvia || 0), t, 1.2);
 };
@@ -1133,7 +1136,7 @@ G.Lectio = { readings: readings, pretty: pretty };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={ambitus:0.7,aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1316,7 +1319,7 @@ function stop(natural){
 }
 
 /* ---------------- ambitus ---------------- */
-function ambi(){if(organ.ctx)organ.ambitus({aer:S.aer,longinqua:S.longinqua,cerei:S.cerei,pluvia:S.pluvia},V.candlesLit());}
+function ambi(){if(organ.ctx)organ.ambitus({ambitus:S.ambitus,aer:S.aer,longinqua:S.longinqua,cerei:S.cerei,pluvia:S.pluvia},V.candlesLit());}
 setInterval(ambi,3000);
 
 /* ---------------- the Angelus ---------------- */
@@ -1421,7 +1424,7 @@ function build(){
   [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
   [['tonus','in tono'],['C','in C, historice']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.tuneOn=this.dataset.v;retune();save();ui();};$('tuneOn').appendChild(b);});
   [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
-  [['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
+  [['ambitus','Ambitus','all the sounds of the nave together'],['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
     var row=document.createElement('label');row.className='slider';
     row.innerHTML='<span><b>'+d[1]+'</b><small>'+d[2]+'</small></span><input type="range" min="0" max="1" step="0.01" value="'+S[d[0]]+'" aria-label="'+d[1]+'">';
     row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();if(d[0]==='cerei')V.relight();};
