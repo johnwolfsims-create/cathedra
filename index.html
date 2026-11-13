@@ -59,11 +59,25 @@ input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;ba
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-9.5px;border-radius:50%;background:#E8C877;box-shadow:0 0 14px rgba(232,203,114,.5)}
 input[type=range]::-moz-range-track{height:3px;background:rgba(233,226,211,.25)}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:#E8C877}
+
+/* the gate: darkness, the window waking, a touch to enter */
+#gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 137px);cursor:pointer;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
+#gate.gone{opacity:0;pointer-events:none}
+#gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;
+  background:linear-gradient(100deg,#7a5426 0%,#c9a160 30%,#fff1cf 45%,#c9a160 60%,#7a5426 100%);background-size:250% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;animation:gateIn 3s ease 2.6s forwards,shimmer 7s linear 2.6s infinite}
+#gate p{margin:14px 0 0;font-family:'Alegreya SC',serif;letter-spacing:.24em;font-size:13px;color:#9C958A;opacity:0;animation:gateIn 2s ease 5.2s forwards,breathe 4s ease-in-out 7.2s infinite}
+@keyframes gateIn{to{opacity:1}}
+@keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.45}}
+body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
+#panel,#season{transition:opacity 2s ease}
 .note{color:var(--muted);font-size:14px;line-height:1.4;margin:8px 0 0}
 </style>
 </head>
-<body>
+<body class="intro">
 <canvas id="nave" aria-hidden="true"></canvas>
+<button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
 
 <div id="panel">
@@ -1200,7 +1214,7 @@ var V=(function(){
   var glass=document.createElement('canvas'),gctx=glass.getContext('2d'),tex=document.createElement('canvas');
   var halos=[];             // [{mask, tint, tctx, scale, pad, strength}]
   var panes=[],pal=null,palRGB=[];
-  var La=0.2,shadeV=0,shadeT=0,relV=0,relT=0,lastF=0,lvAvg=0,bloomT=0,lastT=0,frame=0,L=0.2,lvlMax=0.02,awake=false,bloom=0,resolveT=-99;
+  var introT=0,enterT=0,entered=true,La=0.2,shadeV=0,shadeT=0,relV=0,relT=0,lastF=0,lvAvg=0,bloomT=0,lastT=0,frame=0,L=0.2,lvlMax=0.02,awake=false,bloom=0,resolveT=-99;
   var pulseT=[-99,-99,-99,-99,-99];
   var light={x:150,y:430,s:220,tx:150,ty:430,ts:220};   // where the light falls on the glass (window units)
   function now(){return performance.now()/1000;}
@@ -1355,7 +1369,7 @@ var V=(function(){
       x.drawImage(v.shine,px,y,v.w,v.h);
       x.globalAlpha=alpha*0.12*L;x.drawImage(v.base,px,y,v.w,v.h);
     }
-    var fin=verse.fadeIn?Math.min(1,(t-verse.fadeIn)/4):1;
+    var fin=(verse.fadeIn?Math.min(1,(t-verse.fadeIn)/4):1)*(entered?Math.min(1,(t-(enterT||t))/2.5):0);
     if(verse.next){var k=Math.min(1,(t-verse.fadeStart)/3.5);
       one(verse.cur,fin*(1-Math.min(1,k*2)));one(verse.next,Math.max(0,k*2-1));
       if(k>=1){verse.cur=verse.next;verse.next=null;verse.fadeIn=0;}}
@@ -1599,6 +1613,7 @@ var V=(function(){
     function shade(p){
       var dx=p.cx-light.x,dy=p.cy-light.y,f=Math.exp(-(dx*dx+dy*dy)/(2*light.s*light.s));
       var b=0.16+L*(0.45+1.0*f)+0.14*pv[p.v]+(p.v===0?0.1*pv[4]:0)+(p.v===3?0.16*rp:0)+0.05*Math.sin(p.ph+t*p.sp)+0.025*wind*L+0.3*bloom*L;
+      if(!entered||introT){var ip=Math.min(1,(t-introT)/5.5),th=700-ip*(700-60),dd=(p.cy-th)/60;b*=Math.max(0,Math.min(1,dd+0.3));}
       b*=skyS.bright*(1-0.94*endDark);p.b=b;var c=skyS.amt>0?mixc(p.c,skyS.tint,skyS.amt):p.c,r,gg,bb;
       if(b<=1){r=c[0]*b;gg=c[1]*b;bb=c[2]*b;}else{var e=Math.min(.55,(b-1)*.45);r=c[0]+(255-c[0])*e;gg=c[1]+(255-c[1])*e;bb=c[2]+(255-c[2])*e;}
       acc[0]+=c[0]*b;acc[1]+=c[1]*b;acc[2]+=c[2]*b;wsum+=b;
@@ -1628,7 +1643,8 @@ var V=(function(){
     lc=lc.map(function(x){return Math.min(255,x/mx*235);});
     if(skyS.night>0)lc=mixc(lc,[255,170,90],0.55*skyS.night);
     var rgb=lc.map(Math.round).join(',');
-    var halo=(1-0.6*skyS.night)*(1-0.95*endDark);
+    var introK=introT?Math.min(1,Math.max(0,(t-introT-0.8)/6)):1;
+    var halo=(1-0.6*skyS.night)*(1-0.95*endDark)*introK;
 
     var x=main;x.setTransform(DPR,0,0,DPR,0,0);
     x.globalCompositeOperation='source-over';x.globalAlpha=1;
@@ -1692,6 +1708,7 @@ var V=(function(){
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
     end:function(){endT=now();awake=false;},relight:function(){skyT=-99;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
+    intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
     tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){}};
 })();
 
@@ -1709,6 +1726,16 @@ setInterval(lectio,50000);
 if(document.fonts&&document.fonts.load){document.fonts.load("20px 'Pfeffer'").then(function(){V.refont();});}
 
 build();ui();
+// the gate: the window wakes in the dark; one touch rings a bell and opens the nave
+V.intro();
+$('gate').onclick=function(){
+  if(document.body.classList.contains('entered'))return;
+  document.body.classList.add('entered');
+  try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);}catch(e){}
+  V.enter();V.bell();
+  $('gate').classList.add('gone');document.body.classList.remove('intro');
+  setTimeout(function(){$('gate').hidden=true;},2400);
+};
 })();
 </script>
 </body>
