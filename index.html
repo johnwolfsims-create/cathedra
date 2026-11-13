@@ -1326,7 +1326,7 @@ function stop(natural){
 }
 
 /* ---------------- ambitus ---------------- */
-function ambi(){if(organ.ctx)organ.ambitus({ambitus:S.ambitus,aer:S.aer,longinqua:S.longinqua,cerei:S.cerei,pluvia:S.pluvia},V.candlesLit());}
+function ambi(){if(organ.ctx)organ.ambitus({ambitus:S.ambitus,aer:S.aer,longinqua:S.longinqua,cerei:0,pluvia:S.pluvia},false);}
 setInterval(ambi,3000);
 
 /* ---------------- the Angelus ---------------- */
@@ -1431,7 +1431,7 @@ function build(){
   [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
   [['tonus','in tono'],['C','in C, historice']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.tuneOn=this.dataset.v;retune();save();ui();};$('tuneOn').appendChild(b);});
   [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
-  [['ambitus','Ambitus','all the sounds of the nave together'],['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['cerei','Cerei','candles crackling (only when the candles are lit: at night, with motus caeli on)'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
+  [['ambitus','Ambitus','all the sounds of the nave together'],['aer','Aer','the hush of air in stone'],['longinqua','Longinqua','footsteps, a pew, a door, far off'],['pluvia','Pluvia','rain on the roof']].forEach(function(d){
     var row=document.createElement('label');row.className='slider';
     row.innerHTML='<span><b>'+d[1]+'</b><small>'+d[2]+'</small></span><input type="range" min="0" max="1" step="0.01" value="'+S[d[0]]+'" aria-label="'+d[1]+'">';
     row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
