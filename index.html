@@ -1571,7 +1571,12 @@ var V=(function(){
     if(!sb||sb<20)sb=34;
     verseTop=sb+2;
     var s=0.6,top;
-    for(var it=0;it<3;it++){top=verseTop+30+42*s;s=Math.max(0.2,Math.min((H-top-235)/700,(W*0.5)/300));}
+    // the window ends a little above the controls, wherever the phone puts them
+    var pt=0;try{var pn=document.getElementById('panel'),ti=document.getElementById('intro');pt=pn.getBoundingClientRect().top;
+      if(ti&&ti.hidden){pt-=76;}}catch(e){}
+    if(!pt||pt<H*0.45)pt=H-250;
+    var bottomLimit=pt-34;
+    for(var it=0;it<3;it++){top=verseTop+30+42*s;s=Math.max(0.2,Math.min((bottomLimit-top)/700,(W*0.5)/300));}
     geo={s:s,ox:W/2-150*s,oy:top,w:300*s,h:700*s};
     glass.width=Math.round(geo.w*DPR);glass.height=Math.round(geo.h*DPR);makeTexture();
     bricks=makeBricks();pillarL=makePillar('l');pillarR=makePillar('r');vign=makeVignette();makeMotes();
