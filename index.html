@@ -591,8 +591,10 @@ Organ.prototype.init = function () {
   this.dry = ctx.createGain(); this.dry.gain.value = 0.55;
   this.swell.connect(this.dry); this.dry.connect(this.master);
 
-  this.send = ctx.createGain(); this.send.gain.value = 1;
-  this.swell.connect(this.send);
+  this.send = ctx.createGain(); this.send.gain.value = 0.85;
+  var sendHi = ctx.createBiquadFilter(); sendHi.type = 'lowpass'; sendHi.frequency.value = 3200; sendHi.Q.value = 0.3;
+  var sendLo = ctx.createBiquadFilter(); sendLo.type = 'highpass'; sendLo.frequency.value = 110; sendLo.Q.value = 0.3;
+  this.swell.connect(sendLo); sendLo.connect(sendHi); sendHi.connect(this.send);
   this.convs = [ctx.createConvolver(), ctx.createConvolver()];
   this.wets = [ctx.createGain(), ctx.createGain()];
   for (var i = 0; i < 2; i++) { this.convs[i].connect(this.wets[i]); this.wets[i].connect(this.master); this.wets[i].gain.value = 0; }
@@ -650,8 +652,8 @@ Organ.prototype.wave = function (kind) {
   if (kind === 'pedal') h = [1, 0.3, 0.05, 0.08, 0.02, 0.02];
   else if (kind === 'sub') h = [1, 0.06, 0.01];
   else {
-    var f = 0.45 + 1.15 * c;
-    h = BASE.map(function (a, i) { return Math.min(1, a * Math.pow(f, i)); });
+    var f = 0.45 + 0.75 * c;
+    h = BASE.map(function (a, i) { return Math.min(0.6, a * Math.pow(f, i) * (i >= 5 ? 0.5 : 1)); });
   }
   var re = new Float32Array(h.length + 1), im = new Float32Array(h.length + 1);
   for (var i = 0; i < h.length; i++) im[i + 1] = h[i];
@@ -666,12 +668,14 @@ Organ.prototype.makeIR = function (seconds) {
     for (var i = 0; i < n; i++) {
       var t = i / sr;
       var x = (Math.random() * 2 - 1) * Math.exp(-t / tau);
-      var aa = a * (1 - 0.6 * Math.min(1, t / seconds)); // darker as it fades, like stone
+      var aa = a * (1 - 0.75 * Math.min(1, t / seconds)); // darker as it fades, like stone
       y += aa * (x - y);
       d[i] = y; sum += y * y;
     }
     var fade = Math.floor(0.025 * sr);
     for (i = 0; i < fade; i++) d[i] *= i / fade;
+    // a few early reflections off the nave walls
+    [0.019, 0.031, 0.047, 0.066, 0.089].forEach(function (s, k) { var j = Math.floor((s + ch * 0.004) * sr); if (j < n) d[j] += (k % 2 ? -1 : 1) * 0.35 / (k + 1); });
     var norm = 1 / Math.sqrt(sum) * 0.9;
     for (i = 0; i < n; i++) d[i] *= norm;
   }
@@ -724,13 +728,16 @@ Organ.prototype.pipe = function (midi, kind, when, attack, amp) {
   o1.frequency.value = f; o2.frequency.value = f; o2.detune.value = kind === 'manual' ? 2.6 : 1.2;
   g2.gain.value = kind === 'manual' ? 0.55 : 0.35;
   o1.connect(env); o2.connect(g2); g2.connect(env);
-  o1.start(when); o2.start(when);
-  var nodes = [o1, o2];
+  var drift = ctx.createOscillator(), dg = ctx.createGain();
+  drift.frequency.value = 0.07 + Math.random() * 0.12; dg.gain.value = 1.4 + Math.random();
+  drift.connect(dg); dg.connect(o1.detune); dg.connect(o2.detune);
+  o1.start(when); o2.start(when); drift.start(when);
+  var nodes = [o1, o2, drift];
   if (kind === 'manual') {
     var src = ctx.createBufferSource(); src.buffer = this.noise; src.loop = true;
-    var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = Math.min(9000, f * 2.6); bp.Q.value = 1.1;
+    var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = Math.min(5000, f * 2.2); bp.Q.value = 0.45;
     var bg = ctx.createGain(), brel = ctx.createGain();
-    var a = amp * 0.9;
+    var a = amp * 0.7;
     bg.gain.setValueAtTime(0, when);
     bg.gain.linearRampToValueAtTime(a * 1.6, when + 0.06);           // the chiff
     bg.gain.setTargetAtTime(a * 0.42, when + 0.06, 0.35);            // then air
