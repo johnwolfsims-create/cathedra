@@ -1,5 +1,5 @@
 /* Cathedra offline: keep a copy of the app; refresh it quietly whenever the network is there. */
-var CACHE = 'cathedra-v10';
+var CACHE = 'cathedra-v11';
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));

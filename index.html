@@ -450,6 +450,7 @@ Orgel.prototype.voice = function (c, prev, bassPc) {
   });
   var best = [], self = this;
   var pu = prev ? prev.upper : null;
+  var prevDimHigh = !!(pu && this.cur && DIMS[this.cur.kind] && pu[3] > 72);
   function cost(vs) {
     var k, cst = 0, have = vs.map(function (m) { return mod(m, 12); });
     for (k = 0; k < essential.length; k++) if (have.indexOf(essential[k]) < 0) {
@@ -470,6 +471,10 @@ Orgel.prototype.voice = function (c, prev, bassPc) {
       }
     } else cst += Math.abs(vs[3] - 71) * 0.2;
     cst += Math.abs(vs[3] - 71) * 0.06;
+    // diminished chords keep out of the treble...
+    if (DIMS[c.kind] && vs[3] > 72) cst += 6 + (vs[3] - 72) * 3;
+    // ...and if one did reach up there, the next chord must resolve it by step, up high
+    if (prevDimHigh && Math.abs(vs[3] - pu[3]) > 2) cst += 60;
     return cst;
   }
   var A = cands[0], B = cands[1], C = cands[2], D = cands[3];
@@ -1034,7 +1039,11 @@ function sound(c,D){
   var att=Math.max(1.2,Math.min(3.5,D*0.18)),rel=Math.max(1.8,Math.min(5,D*0.26));
   var up=c.voicing.upper.slice();
   if(c.sus)up[c.sus.voice]=c.sus.from;
-  for(var i=0;i<4;i++){ if(setVoice('u'+i,up[i],'manual',ampFor(up[i]),att,rel)) V.pulse(i); }
+  var dim=Orgel.DIMS[c.kind];
+  for(var i=0;i<4;i++){
+    var hi=dim&&up[i]>72;
+    if(setVoice('u'+i,up[i],'manual',ampFor(up[i])*(hi?0.6:1),hi?att*1.6:att,rel)) V.pulse(i);
+  }
   var b=c.voicing.bass,ped=S.pedale;
   var changedBass=setVoice('bass',ped>0?b:null,'pedal',0.11*duck,att*1.3,rel*1.2);
   setVoice('sub',ped>1&&b!=null?b-12:null,'sub',0.085,att*1.6,rel*1.3);
