@@ -471,9 +471,7 @@ Orgel.prototype.voice = function (c, prev, bassPc) {
       }
     } else cst += Math.abs(vs[3] - 71) * 0.2;
     cst += Math.abs(vs[3] - 71) * 0.06;
-    // diminished chords keep out of the treble...
-    if (DIMS[c.kind] && vs[3] > 72) cst += 6 + (vs[3] - 72) * 3;
-    // ...and if one did reach up there, the next chord must resolve it by step, up high
+    // a diminished chord that reaches up high must be resolved by step, up high, in the next chord
     if (mustResolveHigh && (vs[3] < 70 || Math.abs(vs[3] - pu[3]) > 2)) cst += 60;
     return cst;
   }
