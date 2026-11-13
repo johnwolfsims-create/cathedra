@@ -21,7 +21,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 #nave{position:fixed;top:0;left:0;width:100%;height:calc(100% + var(--gap,0px));display:block}
 .sc{font-family:'Alegreya SC',Georgia,serif;letter-spacing:.2em;font-size:13px}
 #season{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;margin:0;height:20px;line-height:20px;text-align:center;color:#B7AE9F;pointer-events:none}
-#panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px - var(--gap,0px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 2px - var(--gap,0px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
 #panel > *{pointer-events:auto}
 #title{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;color:#F2EADA;text-shadow:0 0 24px rgba(120,100,200,.45);transition:opacity 1.6s}
 #motto{margin:0;font-family:'Pfeffer',Fondamento,serif;font-style:italic;font-size:17px;color:#B7AE9F;transition:opacity 1.6s}
@@ -61,7 +61,7 @@ input[type=range]::-moz-range-track{height:3px;background:rgba(233,226,211,.25)}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:#E8C877}
 
 /* the gate: darkness, the window waking, a touch to enter */
-#gate{position:fixed;top:0;left:0;right:0;height:calc(100% + var(--gap,0px));z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 137px);cursor:pointer;box-sizing:border-box;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
+#gate{position:fixed;top:0;left:0;right:0;height:calc(100% + var(--gap,0px));z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 121px - var(--gap,0px));cursor:pointer;box-sizing:border-box;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
 #gate.gone{opacity:0;pointer-events:none}
 #gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;
   background:linear-gradient(100deg,#7a5426 0%,#c9a160 30%,#fff1cf 45%,#c9a160 60%,#7a5426 100%);background-size:250% 100%;
