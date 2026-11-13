@@ -144,6 +144,14 @@ body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
   <h2>sonus</h2>
   <div id="sliders"></div>
 
+  <h2>temperamentum</h2>
+  <div class="chips" id="temper"></div>
+  <p class="note">How the pipes are tuned against each other, centered on your home key. Werckmeister: Bach's era; near keys sweeter, distant ones tenser. Mesotonicus: Renaissance meantone; pure, glowing thirds, but a few remote chords turn sour. Pythagoricus: medieval pure fifths; open and austere. Aequalis: modern equal tuning.</p>
+
+  <h2>diapason</h2>
+  <div class="chips" id="diapason"></div>
+  <p class="note">The pitch of A. 415: baroque, darker. 466: Chorton, the high pitch of many German church organs in Bach's time.</p>
+
   <h2>pedale</h2>
   <div class="chips" id="pedale"></div>
   <p class="note">16′ adds a deep root under the chord; plena adds the 32′ sub-octave and a soft fifth. Now and then the pedal holds the home note while the chords wander above it.</p>
@@ -567,10 +575,23 @@ G.Orgel = Orgel;
 var BASE = [1, 0.42, 0.12, 0.16, 0.04, 0.06, 0.02, 0.03, 0.012, 0.015];
 function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
+// temperaments: cents away from equal temperament, by pitch class counted from the tonic
+function chain(fifth, lo, hi) {             // a chain of equal fifths from 'lo' to 'hi' steps around the tonic
+  var dev = new Array(12).fill(0);
+  for (var k = lo; k <= hi; k++) { var c = k * fifth, pc = ((k * 7) % 12 + 12) % 12; c = c - 1200 * Math.floor(c / 1200); dev[pc] = c - pc * 100; if (dev[pc] > 600) dev[pc] -= 1200; if (dev[pc] < -600) dev[pc] += 1200; }
+  return dev;
+}
+var TEMPER = {
+  aequalis: new Array(12).fill(0),
+  werckmeister: [0, -9.775, -7.82, -5.865, -9.775, -1.955, -11.73, -3.91, -7.82, -11.73, -3.91, -7.82],
+  mesotonicus: chain(696.578, -3, 8),        // quarter-comma meantone, wolf between the outermost sharps and flats
+  pythagoricus: chain(701.955, -3, 8)        // pure fifths
+};
 function Organ() {
   this.ctx = null;
   this.waves = {};
   this.p = { spiritus: 0.5, color: 0.5, spatium: 0.55 };
+  this.tune = { temper: 'aequalis', key: 2, a: 440 };
 }
 
 Organ.prototype.init = function () {
@@ -626,7 +647,7 @@ Organ.prototype.init = function () {
 // a church bell: minor-third bell partials, each with its own long decay
 var BELL = [[0.5, .55, 10], [1.0, .32, 6.5], [1.19, .42, 5.5], [1.5, .16, 3.2], [2.0, .5, 4.2], [2.51, .13, 2.4], [2.66, .1, 2.0], [3.0, .12, 1.8], [4.07, .06, 1.2], [5.2, .03, 0.8]];
 Organ.prototype.bell = function (nominalMidi, when, amp) {
-  var ctx = this.ctx, f = mtof(nominalMidi) / 2, self = this;   // the hum sits an octave under the nominal
+  var ctx = this.ctx, f = this.freq(nominalMidi) / 2, self = this;   // the hum sits an octave under the nominal
   BELL.forEach(function (p, i) {
     [0, 1].forEach(function (k) {
       if (k && i > 2) return;                                    // warbling doublets on the low partials
@@ -648,6 +669,12 @@ Organ.prototype.bell = function (nominalMidi, when, amp) {
   src.start(when, Math.random()); src.stop(when + 0.3);
 };
 
+// the frequency of a note under the chosen temperament (tuned around the home key) and pitch standard
+Organ.prototype.freq = function (midi) {
+  var t = this.tune, dev = TEMPER[t.temper] || TEMPER.aequalis;
+  var rel = ((midi - t.key) % 12 + 12) % 12;
+  return t.a * Math.pow(2, (midi - 69) / 12) * Math.pow(2, dev[rel] / 1200);
+};
 Organ.prototype.wave = function (kind) {
   var c = Math.round(this.p.color * 10) / 10, key = kind + c;
   if (this.waves[key]) return this.waves[key];
@@ -720,7 +747,7 @@ Organ.prototype.fade = function (to, secs) {
 
 // start one pipe; returns a handle with stop(when, release)
 Organ.prototype.pipe = function (midi, kind, when, attack, amp) {
-  var ctx = this.ctx, f = mtof(midi);
+  var ctx = this.ctx, f = this.freq(midi);
   var env = ctx.createGain(), rel = ctx.createGain();
   env.gain.setValueAtTime(0, when);
   env.gain.setTargetAtTime(amp, when, attack / 3);
@@ -767,7 +794,7 @@ Organ.prototype.level = function () {
   return Math.sqrt(s / (b.length / 2));
 };
 
-Organ.mtof = mtof;
+Organ.mtof = mtof; Organ.TEMPER = TEMPER;
 G.Organ = Organ;
 })(window);
 
@@ -976,7 +1003,7 @@ G.Lectio = { readings: readings, pretty: pretty };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1012,6 +1039,7 @@ function seasonNow(){return S.season==='auto'?liturgical(new Date()):S.season;}
 window.__mk=1;var orgel=new Orgel({key:S.key,mode:S.mode,aetherium:S.aetherium,pedale:S.pedale});
 var organ=new Organ();window.__organ=organ;window.__orgel=orgel;
 organ.p.spiritus=S.spiritus;organ.p.color=S.color;organ.p.spatium=S.spatium;
+function retune(){organ.tune={temper:S.temper,key:S.key,a:S.diapason};}retune();
 
 var lastTension=0,playing=false,timers=[],voices={},startAt=0,ending=false,curChord=null;
 var VOICE_KEYS=['u0','u1','u2','u3','bass','sub','quint','treble','oct0','oct1','oct2','oct3'];
@@ -1228,6 +1256,8 @@ function ui(){
   [].forEach.call($('pedale').children,function(b){b.classList.toggle('on',+b.dataset.v===S.pedale);});
   [].forEach.call($('durata').children,function(b){b.classList.toggle('on',+b.dataset.v===S.durata);});
   $('angelusBtn').classList.toggle('on',!!S.angelus);
+  [].forEach.call($('temper').children,function(b){b.classList.toggle('on',b.dataset.v===S.temper);});
+  [].forEach.call($('diapason').children,function(b){b.classList.toggle('on',+b.dataset.v===S.diapason);});
   [].forEach.call($('lux').children,function(b){b.classList.toggle('on',b.dataset.v===S.lux);});
   $('caeliBtn').classList.toggle('on',!!S.caeli);$('lux').hidden=!S.caeli;
   V.palette(PAL[seasonNow()]);
@@ -1253,6 +1283,8 @@ function build(){
     $('sliders').appendChild(row);
   });
   [['auto','ex sole'],['mane','mane'],['meridies','meridies'],['vespera','vespera'],['nox','nox']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.lux=this.dataset.v;save();ui();V.relight();};$('lux').appendChild(b);});
+  [['aequalis','aequalis'],['werckmeister','Werckmeister'],['mesotonicus','mesotonicus'],['pythagoricus','Pythagoricus']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.temper=this.dataset.v;retune();save();ui();};$('temper').appendChild(b);});
+  [[440,'440'],[415,'415'],[466,'466']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.diapason=+this.dataset.v;retune();save();ui();};$('diapason').appendChild(b);});
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
   [[10,'x'],[20,'xx'],[30,'xxx'],[0,'sine fine']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.durata=+this.dataset.v;orgel.wantEnd=false;save();ui();};$('durata').appendChild(b);});
   $('caeliBtn').onclick=function(){S.caeli=!S.caeli;save();ui();V.relight();};
@@ -1271,7 +1303,7 @@ function sonus(k){
 }
 function changed(harmony){
   save();
-  if(harmony){orgel.set({key:S.key,mode:S.mode});if(playing){var dimNow=orgel.cur&&Orgel.DIMS[orgel.cur.kind];orgel.queue=dimNow?orgel.queue.slice(0,1):[];if(!dimNow)orgel.cur=null;orgel.pedalPoint=false;}}
+  if(harmony){retune();orgel.set({key:S.key,mode:S.mode});if(playing){var dimNow=orgel.cur&&Orgel.DIMS[orgel.cur.kind];orgel.queue=dimNow?orgel.queue.slice(0,1):[];if(!dimNow)orgel.cur=null;orgel.pedalPoint=false;}}
   ui();
 }
 
