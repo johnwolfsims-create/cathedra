@@ -46,6 +46,10 @@ body.room-organum #nave,body.room-crypta #nave{visibility:hidden}
 .roomhead .rv{font-family:'Pfeffer',Fondamento,serif;font-size:19px;color:#C9A25A;padding:0 20px}
 .roomnav{all:unset;position:absolute;top:calc(env(safe-area-inset-top) + 6px);right:10px;min-width:56px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'Alegreya SC',serif;font-size:11px;letter-spacing:.18em;color:#8E877C;cursor:pointer}
 .roomnav:focus-visible,.ohit:focus-visible{outline:2px solid #D9B45A;border-radius:12px}
+.roomnav.low{top:auto;bottom:calc(env(safe-area-inset-bottom) + 2px)}
+.navehint{position:fixed;z-index:30;opacity:0;pointer-events:none;transition:opacity 1.6s ease}
+body.entered:not(.room-organum):not(.room-crypta) .navehint{opacity:1;pointer-events:auto}
+body.calm .navehint{opacity:0!important;pointer-events:none}
 .ohit{all:unset;position:absolute;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}
 #memento{position:absolute;left:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 #memento .sc{color:#9C958A;font-size:11px;letter-spacing:.22em}
@@ -58,13 +62,13 @@ body.room-organum #nave,body.room-crypta #nave{visibility:hidden}
 #accendeForm button{all:unset;cursor:pointer;height:44px;padding:0 14px;border-radius:10px;border:1px solid #D9B45A;background:rgba(217,180,90,.12);color:#E6C46E;font-family:'Alegreya SC',serif;font-size:13px;letter-spacing:.1em;display:flex;align-items:center}
 #accendeForm #nomenCancel{border-color:rgba(217,180,90,.3);color:#9C958A;padding:0 12px}
 body.room-organum #season,body.room-crypta #season{opacity:0}
-body.room-organum #intro,body.room-crypta #intro,body.room-organum #motto,body.room-crypta #motto{opacity:0!important;pointer-events:none}
 .sc{font-family:'Alegreya SC',Georgia,serif;letter-spacing:.2em;font-size:13px}
 #season{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;margin:0;height:20px;line-height:20px;text-align:center;color:#B7AE9F;pointer-events:none}
 #panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 2px - var(--gap,0px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
 #panel > *{pointer-events:auto}
 #title{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;color:#F2EADA;text-shadow:0 0 24px rgba(120,100,200,.45);transition:opacity 1.6s}
 #motto{margin:0;font-family:'Pfeffer',Fondamento,serif;font-style:italic;font-size:17px;color:#B7AE9F;transition:opacity 1.6s}
+#elapsed{transition:opacity 1.2s}
 #chord{height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.2s}
 #roman{color:var(--gold);font-size:13px}
 #sym{font-family:'Pfeffer',Fondamento,serif;font-size:30px;color:#F6EEDC;text-shadow:0 0 20px rgba(232,203,114,.35);min-height:36px}
@@ -137,7 +141,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
 <div id="loftRoom" class="room off">
   <canvas id="loftCv" aria-hidden="true"></canvas>
   <div class="roomhead"><span class="sc">organum</span><span class="rv">Laudate eum in chordis et organo</span></div>
-  <button id="toNavisDown" class="roomnav" type="button" aria-label="Down to the nave">navis ↓</button>
+  <button id="toNavisDown" class="roomnav low" type="button" aria-label="Down to the nave">navis ↓</button>
   <div id="loftHits" role="group" aria-label="The next chord"></div>
 </div>
 <div id="cryptRoom" class="room off">
@@ -151,6 +155,9 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
 </div>
 <button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
+<button id="toLoft" class="roomnav navehint" type="button" aria-label="Up to the organ loft">organum ↑</button>
+<button id="toCrypt" class="roomnav low navehint" type="button" aria-label="Down to the crypt">crypta ↓</button>
+
 
 <div id="panel">
   <div id="intro">
@@ -1378,10 +1385,12 @@ function step(){
   chordAt=performance.now();nextAt=chordAt+(c.isHome?D*1.15:D)*1000;
   setTimeout(function(){if(curChord===c)offerNext();},30);
 }
-var loftOpts=null,nextAt=0,chordAt=0;
+var loftOpts=null,nextAt=0,chordAt=0,startPerf=0;
 function offerNext(){
   if(!playing||Rooms.room()!=='organum'||!curChord||curChord.final){loftOpts=null;Rooms.clear();return;}
-  var o=orgel.peek(24);o.wantEnd=orgel.wantEnd;loftOpts=o;Rooms.offer(o,chordAt,nextAt);
+  var o=orgel.peek(24);o.wantEnd=orgel.wantEnd;loftOpts=o;
+  // the first cards rise with the first chord's name and the timer
+  Rooms.offer(o,chordAt,nextAt,Math.max(0,startPerf+500-performance.now()));
 }
 function loftWants(){if(playing&&!loftOpts&&curChord&&!curChord.final)offerNext();}
 
@@ -1405,7 +1414,8 @@ function start(){
   if(organ.ctx.state!=='running')organ.ctx.resume();
   organ.apply();
   organ.fade(0.9,2.5);
-  playing=true;ending=false;startAt=Date.now();
+  playing=true;ending=false;startAt=Date.now();startPerf=performance.now();
+  $('elapsed').style.opacity=0;setTimeout(function(){if(playing)$('elapsed').style.opacity=1;},500);
   orgel.set({key:S.key,mode:S.mode,aetherium:S.aetherium,pedale:S.pedale});orgel.reset();
   document.body.classList.add('playing');
   ui();V.wake();holdAwake();
@@ -1489,7 +1499,7 @@ function ui(){
   $('title').style.opacity=playing?0:1;$('motto').style.opacity=playing?0:1;
   $('intro').hidden=false;$('chord').hidden=!playing;
   $('motto').hidden=playing;$('title').parentNode.hidden=playing;
-  if(!playing)$('elapsed').textContent='';
+  if(!playing){$('elapsed').textContent='';$('elapsed').style.opacity=0;}
   // sheet states
   var kb=$('keys').children;for(var i=0;i<kb.length;i++){kb[i].classList.toggle('on',+kb[i].dataset.v===S.key);kb[i].textContent=KEYN[i];}
   [].forEach.call($('modes').children,function(b){b.classList.toggle('on',b.dataset.v===S.mode);});
@@ -2498,12 +2508,13 @@ var Rooms=(function(){
   document.addEventListener('wheel',function(e){if($('sheet').classList.contains('open'))return;var n=performance.now();if(n-wt>400)wacc=0;wt=n;wacc+=e.deltaY;
     if(Math.abs(wacc)>80){go(wacc>0?1:-1);wacc=0;}},{passive:true});
   $('toNavisDown').onclick=function(){go(1);};$('toNavisUp').onclick=function(){go(-1);};
+  $('toLoft').onclick=function(){go(-1);};$('toCrypt').onclick=function(){go(1);};
   var rz=0;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(place,200);});
 
   window.__cathedraLap=function(){return opts?(performance.now()-lapStart)/(lapEnd-lapStart):null;};
   return {
     place:place,go:go,goTo:goTo,room:function(){return room;},
-    offer:function(list,start,end){if(opts&&opts.length&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now();faces();layoutHits();},
+    offer:function(list,start,end,delay){if(opts&&opts.length&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now()+(delay||0);faces();layoutHits();},
     clear:function(){if(opts&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=null;picked=-1;hits.innerHTML='';},
     picked:function(){return picked;},
     relayout:function(){if(room==='organum')buildLoft();if(room==='crypta')buildCrypt();}
