@@ -31,73 +31,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Alegreya,Georgia,serif;overflow:hidden;overscroll-behavior:none}
 [hidden]{display:none!important}
-#nave{position:absolute;top:0;left:0;width:100%;height:calc(100% + var(--gap,0px));display:block}
-#world{position:fixed;inset:0;transition:transform 1.15s cubic-bezier(.72,0,.22,1);--sw:.4}
-#world.mba{animation:mba 1.15s cubic-bezier(.72,0,.22,1)}#world.mbb{animation:mbb 1.15s cubic-bezier(.72,0,.22,1)}
-@keyframes mba{0%{filter:none}22%{filter:blur(1.5px) brightness(.9)}50%{filter:blur(3.6px) brightness(.72)}78%{filter:blur(1.5px) brightness(.9)}100%{filter:none}}
-@keyframes mbb{0%{filter:none}22%{filter:blur(1.5px) brightness(.9)}50%{filter:blur(3.6px) brightness(.72)}78%{filter:blur(1.5px) brightness(.9)}100%{filter:none}}
-.room{position:absolute;left:0;width:100%;overflow:hidden;background:#050505}
-.room.off{visibility:hidden}
-.room>svg.bricks,.room .fill,.room .fg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.room .fg svg,.room .fill svg{display:block}
-.room .tide{position:absolute;left:-20%;top:-20%;width:140%;height:140%;pointer-events:none}
-#loftTide{background:radial-gradient(ellipse 34% 30% at 50% 40%,rgba(2,2,2,0) 0%,rgba(2,2,2,.35) 45%,rgba(2,2,2,.86) 75%,rgba(1,1,1,.98) 100%)}
-#cryptTide{left:0;top:0;width:100%;height:100%}
-#loftGlow{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:var(--sw)}
-.r-swell{opacity:var(--sw)}
-.roomhead{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 18px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;text-align:center}
-.roomhead .sc{color:#B7AE9F;font-size:13px;letter-spacing:.22em;line-height:20px}
-.roomhead .rv{font-family:'Pfeffer',Fondamento,serif;font-size:19px;color:#C9A25A;padding:0 20px}
-.roomnav{all:unset;position:absolute;top:calc(env(safe-area-inset-top) + 6px);right:10px;min-width:56px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'Alegreya SC',serif;font-size:11px;letter-spacing:.18em;color:#8E877C;cursor:pointer}
-.roomnav:focus-visible{outline:2px solid #D9B45A;border-radius:8px}
-#loftOrgan{position:absolute;overflow:visible}
-#loftCards{position:absolute;left:0;right:0;display:flex;justify-content:center;opacity:0;transition:opacity 1.4s ease;pointer-events:none}
-#loftCards.on{opacity:1;pointer-events:auto}
-.ocard{all:unset;position:relative;cursor:pointer;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  background:radial-gradient(ellipse 70% 66% at 50% 46%,rgba(170,122,60,.05) 0%,rgba(150,104,48,.14) 40%,rgba(120,80,34,.36) 78%,rgba(84,54,22,.56) 100%);
-  box-shadow:0 0 14px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,220,160,.18);transition:opacity .6s ease,box-shadow .6s ease,transform .6s ease}
-.ocard:focus-visible{outline:2px solid #D9B45A;outline-offset:3px}
-.ocard span{position:relative;text-shadow:0 1px 3px rgba(0,0,0,.7);line-height:1.05}
-.ocard .rn{font-family:'Alegreya SC',serif;letter-spacing:.12em;color:#F2D48C}
-.ocard .sy{font-family:'Pfeffer',Fondamento,serif;color:#FBF4E6}
-.ocard .wd{font-family:Alegreya,serif;font-style:italic;color:#EADFC8}
-.ocard .r-base{stroke-opacity:.14}.ocard.sel .r-base{stroke-opacity:.85}
-.ocard.sel{box-shadow:0 0 26px rgba(217,180,90,.45);transform:translateY(-4px)}.ocard.other{opacity:.45}
-.r-ring{stroke-dasharray:100;stroke-dashoffset:100;animation:r-ring linear forwards}
-@keyframes r-ring{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
-.r-shim{stroke-dasharray:2.5 97.5;stroke-dashoffset:1.25;animation:r-shim cubic-bezier(.45,.05,.55,.95) both}
-.r-ring{animation-timing-function:cubic-bezier(.45,.05,.55,.95)}
-@keyframes r-shim{from{stroke-dashoffset:1.25}to{stroke-dashoffset:-98.75}}
-.r-csheen{animation:r-csheen 8s ease-in-out infinite;mix-blend-mode:screen;transform-box:view-box}
-@keyframes r-csheen{0%{transform:translateX(-140%)}55%{transform:translateX(140%)}100%{transform:translateX(140%)}}
-.sheen{animation:sheen 11s ease-in-out infinite alternate}
-@keyframes sheen{from{transform:translateX(0)}to{transform:translateX(520px)}}
-.fl1{animation:flick 2.3s ease-in-out infinite alternate}.fl2{animation:flick 2.9s ease-in-out infinite alternate-reverse}
-@keyframes flick{0%{opacity:.82}35%{opacity:1}60%{opacity:.88}100%{opacity:.97}}
-.puff{opacity:0;transform-box:fill-box;transform-origin:50% 100%;animation:puff linear infinite}
-@keyframes puff{0%,91%{opacity:0;transform:translateY(0) scale(.3)}92.5%{opacity:.85;transform:translateY(-2px) scale(.8)}100%{opacity:0;transform:translateY(-18px) scale(2.4)}}
-.r-mote{animation:r-mote linear infinite}
-@keyframes r-mote{0%{transform:translate(0,0);opacity:0}15%{opacity:.9}85%{opacity:.7}100%{transform:translate(14px,70px);opacity:0}}
-.r-votive{animation:flick 1.9s ease-in-out infinite alternate}
-.r-torch{animation:r-torch 1.3s ease-in-out infinite alternate}
-@keyframes r-torch{0%{opacity:.55}40%{opacity:.85}70%{opacity:.6}100%{opacity:.8}}
-.r-drip{transform-box:fill-box;transform-origin:50% 0;animation:r-drip ease-out infinite}
-@keyframes r-drip{0%{transform:scaleY(.05)}70%{transform:scaleY(1)}100%{transform:scaleY(1)}}
-.r-fall{opacity:0;animation:r-fall linear infinite}
-@keyframes r-fall{0%,93%{opacity:0;transform:translateY(0)}94%{opacity:1;transform:translateY(0)}99%{opacity:1;transform:translateY(var(--d))}100%{opacity:0;transform:translateY(var(--d))}}
-.room.off *{animation-play-state:paused!important}
-#memento{position:absolute;left:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
-#memento .sc{color:#9C958A;font-size:11px;letter-spacing:.22em}
-#mementoNames{display:flex;flex-wrap:wrap;justify-content:center;gap:0 12px;max-width:520px}
-.nomen{all:unset;cursor:pointer;font-family:'Pfeffer',Fondamento,serif;font-size:16px;color:#C9A25A;min-height:30px}
-.nomen.ask{color:#E6C46E;font-style:italic}
-#accendeBtn{all:unset;cursor:pointer;font-family:'Alegreya SC',serif;font-size:12px;letter-spacing:.14em;color:#B7AE9F;min-height:36px;padding:0 10px}
-#accendeForm{position:absolute;left:24px;right:24px;top:40%;display:flex;gap:8px;max-width:440px;margin:0 auto}
-#accendeForm input{flex:1;min-width:0;background:rgba(20,17,14,.92);border:1px solid rgba(217,180,90,.4);border-radius:10px;padding:10px 12px;color:#EDE5D6;font-family:Alegreya,serif;font-size:16px}
-#accendeForm button{all:unset;cursor:pointer;height:44px;padding:0 14px;border-radius:10px;border:1px solid #D9B45A;background:rgba(217,180,90,.12);color:#E6C46E;font-family:'Alegreya SC',serif;font-size:13px;letter-spacing:.1em;display:flex;align-items:center}
-#accendeForm #nomenCancel{border-color:rgba(217,180,90,.3);color:#9C958A;padding:0 12px}
-body.room-organum #season,body.room-crypta #season{opacity:0}
-body.room-organum #intro,body.room-crypta #intro,body.room-organum #motto,body.room-crypta #motto{opacity:0!important;pointer-events:none}
+#nave{position:fixed;top:0;left:0;width:100%;height:calc(100% + var(--gap,0px));display:block}
 .sc{font-family:'Alegreya SC',Georgia,serif;letter-spacing:.2em;font-size:13px}
 #season{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;margin:0;height:20px;line-height:20px;text-align:center;color:#B7AE9F;pointer-events:none}
 #panel{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 2px - var(--gap,0px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
@@ -171,206 +105,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   document.documentElement.style.setProperty('--gap',g+'px');window.__gap=g;}
   fix();addEventListener('resize',fix);addEventListener('orientationchange',function(){setTimeout(fix,300);});})();
 </script>
-<div id="world">
-<div id="loftRoom" class="room off">
-  <svg class="bricks" aria-hidden="true"><defs><pattern id="lbk" width="64" height="48" patternUnits="userSpaceOnUse"><rect width="64" height="48" fill="#0f0e0d"/><rect x="1" y="1" width="62" height="22" fill="#262523"/><rect x="-31" y="25" width="62" height="22" fill="#232220"/><rect x="33" y="25" width="62" height="22" fill="#292826"/></pattern>
-  <radialGradient id="lvg" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#2a1c0e" stop-opacity="0"/><stop offset=".45" stop-color="#050404" stop-opacity=".55"/><stop offset="1" stop-color="#020202" stop-opacity=".97"/></radialGradient></defs>
-  <rect width="100%" height="100%" fill="url(#lbk)"/><rect width="100%" height="100%" fill="url(#lvg)"/></svg>
-  <svg id="loftOrgan" viewBox="0 0 360 440" aria-hidden="true"><defs>
-<linearGradient id="OPb" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#2a1a0a"/><stop offset=".18" stop-color="#7a5524"/><stop offset=".36" stop-color="#e9c47e"/><stop offset=".5" stop-color="#b8883f"/><stop offset=".78" stop-color="#5a3b16"/><stop offset="1" stop-color="#1a1006"/></linearGradient>
-<linearGradient id="OPw" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3a2415"/><stop offset="1" stop-color="#1e120a"/></linearGradient>
-<linearGradient id="OPwf" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#24160c"/><stop offset=".5" stop-color="#4a2e1a"/><stop offset="1" stop-color="#24160c"/></linearGradient>
-<linearGradient id="OPs" x1="0" x2="1"><stop offset="0" stop-color="#fff3d6" stop-opacity="0"/><stop offset=".5" stop-color="#fff3d6" stop-opacity=".55"/><stop offset="1" stop-color="#fff3d6" stop-opacity="0"/></linearGradient>
-<radialGradient id="OPg"><stop offset="0" stop-color="#ffbf6a" stop-opacity=".55"/><stop offset=".35" stop-color="#ff9a40" stop-opacity=".18"/><stop offset="1" stop-color="#ff8a30" stop-opacity="0"/></radialGradient>
-<radialGradient id="OPgl"><stop offset="0" stop-color="#fff1c8"/><stop offset=".5" stop-color="#ffb24a"/><stop offset="1" stop-color="#c0641a"/></radialGradient>
-</defs>
-<rect x="20" y="96" width="320" height="300" fill="url(#OPw)"/>
-<rect x="140" y="60" width="80" height="316" fill="url(#OPw)" stroke="#120a05" stroke-width="1"/>
-<path d="M134 60 L180.0 38 L226 60 Z" fill="url(#OPwf)" stroke="#120a05"/>
-<rect x="134" y="60" width="92" height="8" fill="#4a2e1a" stroke="#120a05"/>
-<line x1="136" y1="71" x2="224" y2="71" stroke="#8a6230" stroke-opacity=".5"/>
-<path d="M177.0 38 L180.0 26 L183.0 38 Z" fill="#8a6230"/>
-<rect x="28" y="112" width="62" height="264" fill="url(#OPw)" stroke="#120a05" stroke-width="1"/>
-<path d="M22 112 L59.0 90 L96 112 Z" fill="url(#OPwf)" stroke="#120a05"/>
-<rect x="22" y="112" width="74" height="8" fill="#4a2e1a" stroke="#120a05"/>
-<line x1="24" y1="123" x2="94" y2="123" stroke="#8a6230" stroke-opacity=".5"/>
-<path d="M56.0 90 L59.0 78 L62.0 90 Z" fill="#8a6230"/>
-<rect x="270" y="112" width="62" height="264" fill="url(#OPw)" stroke="#120a05" stroke-width="1"/>
-<path d="M264 112 L301.0 90 L338 112 Z" fill="url(#OPwf)" stroke="#120a05"/>
-<rect x="264" y="112" width="74" height="8" fill="#4a2e1a" stroke="#120a05"/>
-<line x1="266" y1="123" x2="336" y2="123" stroke="#8a6230" stroke-opacity=".5"/>
-<path d="M298.0 90 L301.0 78 L304.0 90 Z" fill="#8a6230"/>
-<rect x="12" y="372" width="336" height="58" fill="url(#OPwf)" stroke="#120a05"/>
-<rect x="12" y="372" width="336" height="7" fill="#5a3820"/>
-<rect x="24" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="27" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="72" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="75" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="120" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="123" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="168" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="171" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="216" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="219" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="264" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="267" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="312" y="387" width="40" height="34" rx="2" fill="none" stroke="#120a05" stroke-opacity=".8"/><rect x="315" y="390" width="34" height="28" rx="1" fill="none" stroke="#6b4a26" stroke-opacity=".35"/>
-<rect x="145.8" y="110.0" width="12.5" height="232.0" fill="url(#OPb)"/>
-<ellipse cx="152.0" cy="110.0" rx="6.2" ry="1.5" fill="#120a04"/>
-<path d="M145.8 342.0 L150.4 372.0 L153.6 372.0 L158.2 342.0 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M148.1 341.5 L152.0 335.1 L155.9 341.5 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="148.1" y="341.5" width="7.8" height="2.0" fill="#0d0702"/>
-<rect x="159.8" y="94.0" width="12.5" height="248.0" fill="url(#OPb)"/>
-<ellipse cx="166.0" cy="94.0" rx="6.2" ry="1.5" fill="#120a04"/>
-<path d="M159.8 342.0 L164.4 372.0 L167.6 372.0 L172.2 342.0 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M162.1 341.5 L166.0 335.1 L169.9 341.5 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="162.1" y="341.5" width="7.8" height="2.0" fill="#0d0702"/>
-<rect x="173.8" y="78.0" width="12.5" height="264.0" fill="url(#OPb)"/>
-<ellipse cx="180.0" cy="78.0" rx="6.2" ry="1.5" fill="#120a04"/>
-<path d="M173.8 342.0 L178.4 372.0 L181.6 372.0 L186.2 342.0 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M176.1 341.5 L180.0 335.1 L183.9 341.5 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="176.1" y="341.5" width="7.8" height="2.0" fill="#0d0702"/>
-<rect x="187.8" y="94.0" width="12.5" height="248.0" fill="url(#OPb)"/>
-<ellipse cx="194.0" cy="94.0" rx="6.2" ry="1.5" fill="#120a04"/>
-<path d="M187.8 342.0 L192.4 372.0 L195.6 372.0 L200.2 342.0 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M190.1 341.5 L194.0 335.1 L197.9 341.5 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="190.1" y="341.5" width="7.8" height="2.0" fill="#0d0702"/>
-<rect x="201.8" y="110.0" width="12.5" height="232.0" fill="url(#OPb)"/>
-<ellipse cx="208.0" cy="110.0" rx="6.2" ry="1.5" fill="#120a04"/>
-<path d="M201.8 342.0 L206.4 372.0 L209.6 372.0 L214.2 342.0 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M204.1 341.5 L208.0 335.1 L211.9 341.5 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="204.1" y="341.5" width="7.8" height="2.0" fill="#0d0702"/>
-<rect x="30.0" y="143.0" width="12.0" height="200.2" fill="url(#OPb)"/>
-<ellipse cx="36.0" cy="143.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M30.0 343.2 L34.4 372.0 L37.6 372.0 L42.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M32.3 342.7 L36.0 336.6 L39.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="32.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="272.0" y="143.0" width="12.0" height="200.2" fill="url(#OPb)"/>
-<ellipse cx="278.0" cy="143.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M272.0 343.2 L276.4 372.0 L279.6 372.0 L284.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M274.3 342.7 L278.0 336.6 L281.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="274.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="45.0" y="133.0" width="12.0" height="210.2" fill="url(#OPb)"/>
-<ellipse cx="51.0" cy="133.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M45.0 343.2 L49.4 372.0 L52.6 372.0 L57.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M47.3 342.7 L51.0 336.6 L54.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="47.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="287.0" y="133.0" width="12.0" height="210.2" fill="url(#OPb)"/>
-<ellipse cx="293.0" cy="133.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M287.0 343.2 L291.4 372.0 L294.6 372.0 L299.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M289.3 342.7 L293.0 336.6 L296.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="289.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="60.0" y="133.0" width="12.0" height="210.2" fill="url(#OPb)"/>
-<ellipse cx="66.0" cy="133.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M60.0 343.2 L64.4 372.0 L67.6 372.0 L72.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M62.3 342.7 L66.0 336.6 L69.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="62.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="302.0" y="133.0" width="12.0" height="210.2" fill="url(#OPb)"/>
-<ellipse cx="308.0" cy="133.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M302.0 343.2 L306.4 372.0 L309.6 372.0 L314.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M304.3 342.7 L308.0 336.6 L311.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="304.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="75.0" y="143.0" width="12.0" height="200.2" fill="url(#OPb)"/>
-<ellipse cx="81.0" cy="143.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M75.0 343.2 L79.4 372.0 L82.6 372.0 L87.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M77.3 342.7 L81.0 336.6 L84.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="77.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="317.0" y="143.0" width="12.0" height="200.2" fill="url(#OPb)"/>
-<ellipse cx="323.0" cy="143.0" rx="6.0" ry="1.4" fill="#120a04"/>
-<path d="M317.0 343.2 L321.4 372.0 L324.6 372.0 L329.0 343.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M319.3 342.7 L323.0 336.6 L326.7 342.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="319.3" y="342.7" width="7.4" height="1.9" fill="#0d0702"/>
-<rect x="93.7" y="190.0" width="6.6" height="166.2" fill="url(#OPb)"/>
-<ellipse cx="97.0" cy="190.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M93.7 356.2 L96.1 372.0 L97.9 372.0 L100.3 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M95.0 355.7 L97.0 352.5 L99.0 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="95.0" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="259.7" y="190.0" width="6.6" height="166.2" fill="url(#OPb)"/>
-<ellipse cx="263.0" cy="190.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M259.7 356.2 L262.1 372.0 L263.9 372.0 L266.3 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M261.0 355.7 L263.0 352.5 L265.0 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="261.0" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="101.3" y="199.0" width="6.6" height="157.2" fill="url(#OPb)"/>
-<ellipse cx="104.6" cy="199.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M101.3 356.2 L103.7 372.0 L105.5 372.0 L107.9 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M102.6 355.7 L104.6 352.5 L106.6 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="102.6" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="252.1" y="199.0" width="6.6" height="157.2" fill="url(#OPb)"/>
-<ellipse cx="255.4" cy="199.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M252.1 356.2 L254.5 372.0 L256.3 372.0 L258.7 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M253.4 355.7 L255.4 352.5 L257.4 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="253.4" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="108.9" y="208.0" width="6.6" height="148.2" fill="url(#OPb)"/>
-<ellipse cx="112.2" cy="208.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M108.9 356.2 L111.3 372.0 L113.1 372.0 L115.5 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M110.2 355.7 L112.2 352.5 L114.2 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="110.2" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="244.5" y="208.0" width="6.6" height="148.2" fill="url(#OPb)"/>
-<ellipse cx="247.8" cy="208.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M244.5 356.2 L246.9 372.0 L248.7 372.0 L251.1 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M245.8 355.7 L247.8 352.5 L249.8 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="245.8" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="116.5" y="217.0" width="6.6" height="139.2" fill="url(#OPb)"/>
-<ellipse cx="119.8" cy="217.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M116.5 356.2 L118.9 372.0 L120.7 372.0 L123.1 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M117.8 355.7 L119.8 352.5 L121.8 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="117.8" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="236.9" y="217.0" width="6.6" height="139.2" fill="url(#OPb)"/>
-<ellipse cx="240.2" cy="217.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M236.9 356.2 L239.3 372.0 L241.1 372.0 L243.5 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M238.2 355.7 L240.2 352.5 L242.2 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="238.2" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="124.1" y="226.0" width="6.6" height="130.2" fill="url(#OPb)"/>
-<ellipse cx="127.4" cy="226.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M124.1 356.2 L126.5 372.0 L128.3 372.0 L130.7 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M125.4 355.7 L127.4 352.5 L129.4 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="125.4" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="229.3" y="226.0" width="6.6" height="130.2" fill="url(#OPb)"/>
-<ellipse cx="232.6" cy="226.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M229.3 356.2 L231.7 372.0 L233.5 372.0 L235.9 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M230.6 355.7 L232.6 352.5 L234.6 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="230.6" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="131.7" y="235.0" width="6.6" height="121.2" fill="url(#OPb)"/>
-<ellipse cx="135.0" cy="235.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M131.7 356.2 L134.1 372.0 L135.9 372.0 L138.3 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M133.0 355.7 L135.0 352.5 L137.0 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="133.0" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<rect x="221.7" y="235.0" width="6.6" height="121.2" fill="url(#OPb)"/>
-<ellipse cx="225.0" cy="235.0" rx="3.3" ry="0.8" fill="#120a04"/>
-<path d="M221.7 356.2 L224.1 372.0 L225.9 372.0 L228.3 356.2 Z" fill="url(#OPb)" opacity=".85"/>
-<path d="M223.0 355.7 L225.0 352.5 L227.0 355.7 Z" fill="#9a6e30" stroke="#2a1806" stroke-width=".6"/>
-<rect x="223.0" y="355.7" width="4.1" height="1.2" fill="#0d0702"/>
-<clipPath id="OPc"><rect x="145.8" y="110.0" width="12.5" height="232.0"/><rect x="159.8" y="94.0" width="12.5" height="248.0"/><rect x="173.8" y="78.0" width="12.5" height="264.0"/><rect x="187.8" y="94.0" width="12.5" height="248.0"/><rect x="201.8" y="110.0" width="12.5" height="232.0"/><rect x="30.0" y="143.0" width="12.0" height="200.2"/><rect x="272.0" y="143.0" width="12.0" height="200.2"/><rect x="45.0" y="133.0" width="12.0" height="210.2"/><rect x="287.0" y="133.0" width="12.0" height="210.2"/><rect x="60.0" y="133.0" width="12.0" height="210.2"/><rect x="302.0" y="133.0" width="12.0" height="210.2"/><rect x="75.0" y="143.0" width="12.0" height="200.2"/><rect x="317.0" y="143.0" width="12.0" height="200.2"/><rect x="93.7" y="190.0" width="6.6" height="166.2"/><rect x="259.7" y="190.0" width="6.6" height="166.2"/><rect x="101.3" y="199.0" width="6.6" height="157.2"/><rect x="252.1" y="199.0" width="6.6" height="157.2"/><rect x="108.9" y="208.0" width="6.6" height="148.2"/><rect x="244.5" y="208.0" width="6.6" height="148.2"/><rect x="116.5" y="217.0" width="6.6" height="139.2"/><rect x="236.9" y="217.0" width="6.6" height="139.2"/><rect x="124.1" y="226.0" width="6.6" height="130.2"/><rect x="229.3" y="226.0" width="6.6" height="130.2"/><rect x="131.7" y="235.0" width="6.6" height="121.2"/><rect x="221.7" y="235.0" width="6.6" height="121.2"/></clipPath>
-<g clip-path="url(#OPc)"><rect class="sheen" x="-80" y="40" width="70" height="340" fill="url(#OPs)"/></g>
-<filter id="OPpf" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>
-<g class="puff" style="animation-duration: 23s; animation-delay: -3s" filter="url(#OPpf)"><circle cx="180.0" cy="75.0" r="6.9" fill="#d9c8a6" fill-opacity=".55"/><circle cx="175.0" cy="72.0" r="5.6" fill="#cdbb98" fill-opacity=".45"/><circle cx="185.6" cy="71.0" r="5.0" fill="#e2d3b4" fill-opacity=".4"/></g>
-<g class="puff" style="animation-duration: 29s; animation-delay: -14s" filter="url(#OPpf)"><circle cx="51.0" cy="130.0" r="6.6" fill="#d9c8a6" fill-opacity=".55"/><circle cx="46.2" cy="127.0" r="5.4" fill="#cdbb98" fill-opacity=".45"/><circle cx="56.4" cy="126.0" r="4.8" fill="#e2d3b4" fill-opacity=".4"/></g>
-<g class="puff" style="animation-duration: 19s; animation-delay: -8s" filter="url(#OPpf)"><circle cx="323.0" cy="140.0" r="6.6" fill="#d9c8a6" fill-opacity=".55"/><circle cx="318.2" cy="137.0" r="5.4" fill="#cdbb98" fill-opacity=".45"/><circle cx="328.4" cy="136.0" r="4.8" fill="#e2d3b4" fill-opacity=".4"/></g>
-<g class="puff" style="animation-duration: 31s; animation-delay: -22s" filter="url(#OPpf)"><circle cx="247.8" cy="205.0" r="3.6" fill="#d9c8a6" fill-opacity=".55"/><circle cx="245.2" cy="202.0" r="3.0" fill="#cdbb98" fill-opacity=".45"/><circle cx="250.8" cy="201.0" r="2.6" fill="#e2d3b4" fill-opacity=".4"/></g>
-<circle class="fl1" cx="70" cy="236" r="130" fill="url(#OPg)" style="mix-blend-mode:screen"/>
-<line x1="70" y1="0" x2="70" y2="214" stroke="#14100c" stroke-width="1.4"/>
-<path d="M61 222 L79 222 L82 246 L58 246 Z" fill="url(#OPgl)" opacity=".92"/>
-<path d="M61 222 L79 222 L82 246 L58 246 Z M70 222 L70 246" fill="none" stroke="#17110b" stroke-width="1.6"/>
-<path d="M59 222 L70 212 L81 222 Z" fill="#17110b"/><rect x="57" y="246" width="26" height="4" fill="#17110b"/>
-<ellipse class="fl1" cx="70" cy="236" rx="2.6" ry="5" fill="#fffbe8"/>
-<circle class="fl2" cx="290" cy="236" r="130" fill="url(#OPg)" style="mix-blend-mode:screen"/>
-<line x1="290" y1="0" x2="290" y2="214" stroke="#14100c" stroke-width="1.4"/>
-<path d="M281 222 L299 222 L302 246 L278 246 Z" fill="url(#OPgl)" opacity=".92"/>
-<path d="M281 222 L299 222 L302 246 L278 246 Z M290 222 L290 246" fill="none" stroke="#17110b" stroke-width="1.6"/>
-<path d="M279 222 L290 212 L301 222 Z" fill="#17110b"/><rect x="277" y="246" width="26" height="4" fill="#17110b"/>
-<ellipse class="fl2" cx="290" cy="236" rx="2.6" ry="5" fill="#fffbe8"/></svg>
-  <div id="loftTide" class="tide" aria-hidden="true"></div>
-  <div id="loftGlow" aria-hidden="true"></div>
-  <div id="loftFg" class="fg" aria-hidden="true"></div>
-  <div class="roomhead"><span class="sc">organum</span><span class="rv">Laudate eum in chordis et organo</span></div>
-  <button id="toNavisDown" class="roomnav" type="button" aria-label="Down to the nave">navis ↓</button>
-  <div id="loftCards" role="group" aria-label="The next chord"></div>
-</div>
 <canvas id="nave" aria-hidden="true"></canvas>
-<div id="cryptRoom" class="room off">
-  <div id="cryptVault" class="fill" aria-hidden="true"></div>
-  <div id="cryptTide" class="tide" aria-hidden="true"></div>
-  <div id="cryptFg" class="fg" aria-hidden="true"></div>
-  <div class="roomhead"><span class="sc">crypta</span><span class="rv">Requiem aeternam dona eis, Domine</span></div>
-  <button id="toNavisUp" class="roomnav" type="button" aria-label="Up to the nave">navis ↑</button>
-  <div id="memento"><span class="sc">memento</span><div id="mementoNames"></div><button id="accendeBtn" type="button">+ accende</button></div>
-  <form id="accendeForm" hidden><label for="nomenIn" class="sc" style="position:absolute;left:-9999px">nomen</label><input id="nomenIn" placeholder="pro quo oras" maxlength="40" autocomplete="off"><button type="submit">accende</button><button type="button" id="nomenCancel" aria-label="Cancel">×</button></form>
-</div>
-</div>
 <button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
 
@@ -397,9 +132,6 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <button class="close" type="button" aria-label="Close" id="closeSheet">×</button>
   <h1>ordo</h1>
   <p class="sub">how the nave dreams</p>
-
-  <h2>loca</h2>
-  <div class="chips" id="loca"></div>
 
   <h2>tonus</h2>
   <div class="keys" id="keys"></div>
@@ -845,28 +577,6 @@ Orgel.prototype.label = function (c) {
   return { symbol: sym, roman: rn };
 };
 
-/* ---- the organ loft: look ahead at what Orgel might dream next, and let the player choose ---- */
-var KEEP = ['cur','voicing','atHome','queue','pedalPoint','wantEnd','history','sinceDim','journey','shortTrips','highPending'];
-Orgel.prototype.snap = function () { var o = {}, self = this; KEEP.forEach(function (k) { o[k] = self[k]; }); return JSON.parse(JSON.stringify(o)); };
-Orgel.prototype.restore = function (s) { var c = JSON.parse(JSON.stringify(s)), self = this; KEEP.forEach(function (k) { self[k] = c[k]; }); };
-// dream the next chord n times from the same moment; the three most frequent outcomes, with their odds
-Orgel.prototype.peek = function (n) {
-  var base = this.snap(), tally = {}, keys = [], i;
-  for (i = 0; i < (n || 48); i++) {
-    this.restore(base);
-    var c = this.next(), k = c.label.roman + '|' + c.root + '|' + c.third;   // colourings of one chord count as one choice
-    if (!tally[k]) { tally[k] = { n: 0, post: this.snap() }; keys.push(k); }
-    tally[k].n++;
-  }
-  this.restore(base);
-  keys.sort(function (a, b) { return tally[b].n - tally[a].n; });
-  var top = keys.slice(0, 3), tot = 0;
-  top.forEach(function (k) { tot += tally[k].n; });
-  return top.map(function (k) { var t = tally[k]; return { key: k, chord: t.post.cur, post: t.post, p: t.n / tot }; });
-};
-// make the chosen dream the real one
-Orgel.prototype.take = function (opt) { this.restore(opt.post); return this.cur; };
-
 Orgel.DIMS = DIMS; Orgel.MODES = MODES; Orgel.MODE_ORDER = MODE_ORDER; Orgel.SHARP = SHARP; Orgel.FLAT = FLAT;
 G.Orgel = Orgel;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -906,10 +616,7 @@ Organ.prototype.init = function () {
   this.master = ctx.createGain(); this.master.gain.value = 0;
   this.comp = ctx.createDynamicsCompressor();
   this.comp.threshold.value = -16; this.comp.ratio.value = 2.5; this.comp.attack.value = 0.05; this.comp.release.value = 0.6;
-  // the room you listen from: open in the nave and loft; through stone in the crypt
-  this.roomLP = ctx.createBiquadFilter(); this.roomLP.type = 'lowpass'; this.roomLP.frequency.value = 20000; this.roomLP.Q.value = 0.4;
-  this.roomLo = ctx.createBiquadFilter(); this.roomLo.type = 'lowshelf'; this.roomLo.frequency.value = 150; this.roomLo.gain.value = 0;
-  this.master.connect(this.roomLP); this.roomLP.connect(this.roomLo); this.roomLo.connect(this.comp); this.comp.connect(ctx.destination);
+  this.master.connect(this.comp); this.comp.connect(ctx.destination);
 
   this.bus = ctx.createGain();            // all pipes
   this.breath = ctx.createGain();         // the air
@@ -1103,14 +810,6 @@ Organ.prototype.level = function () {
 };
 
 Organ.mtof = mtof; Organ.TEMPER = TEMPER;
-// moving between places: 'crypta' hears the organ through the vault — highs gone, the pedal felt in the floor
-Organ.prototype.room = function (name, secs) {
-  if (!this.ctx) return;
-  var t = this.ctx.currentTime, k = (secs || 1.2) / 3, down = name === 'crypta';
-  this.roomLP.frequency.cancelScheduledValues(t); this.roomLo.gain.cancelScheduledValues(t);
-  this.roomLP.frequency.setTargetAtTime(down ? 620 : 20000, t, k);
-  this.roomLo.gain.setTargetAtTime(down ? 5 : 0, t, k);
-};
 G.Organ = Organ;
 })(window);
 
@@ -1145,7 +844,7 @@ Organ.prototype.ambitus = function (lv, candlesLit) {
   var ctx = this.ctx, A = this.amb, self = this;
   if (!A) {
     A = this.amb = {};
-    A.master = ctx.createGain(); A.master.gain.value = 1; A.master.connect(this.roomLP);
+    A.master = ctx.createGain(); A.master.gain.value = 1; A.master.connect(this.comp);
     A.bus = ctx.createGain(); A.bus.gain.value = 1; A.bus.connect(A.master);
     A.far = ctx.createGain(); A.far.gain.value = 1;              // distant sounds: mostly reverb
     var farDry = ctx.createGain(); farDry.gain.value = 0.25; A.far.connect(farDry); farDry.connect(A.bus);
@@ -1578,17 +1277,9 @@ function step(){
   var total=S.durata?S.durata*60:0,el=(Date.now()-startAt)/1000;
   var D=chordDur();
   if(total&&el>total-2.2*D)orgel.wantEnd=true;
-  var c,lo=loftOpts;loftOpts=null;
-  if(lo&&Rooms.room()==='organum'&&!(orgel.wantEnd&&!lo.wantEnd)){
-    // the organ loft: the card you chose, or Orgel's own pick among the three
-    var pi=Rooms.picked();
-    if(pi<0){var rr=Math.random(),acc=0;pi=lo.length-1;for(var j=0;j<lo.length;j++){acc+=lo[j].p;if(rr<acc){pi=j;break;}}}
-    c=orgel.take(lo[pi]);
-  }else c=orgel.next();
-  curChord=c;
+  var c=orgel.next();curChord=c;
   if(Orgel.DIMS[c.kind])D*=0.6+0.4*Math.pow(Math.random(),1.6);   // usually shorter, now and then full length
   if(c.final){
-    loftOpts=null;Rooms.clear();
     // the last chord: the Amen lands, one bell, and the window goes dark
     sound(c,D*1.6);
     later(function(){if(playing){organ.bell(nominalNote(),organ.ctx.currentTime+0.05,0.15);V.bell();}},1.2);
@@ -1597,15 +1288,7 @@ function step(){
   }
   sound(c,c.isHome?D*1.15:D);
   later(step,c.isHome?D*1.15:D);
-  nextAt=Date.now()+(c.isHome?D*1.15:D)*1000;
-  offerNext(c.isHome?D*1.15:D);
 }
-var loftOpts=null,nextAt=0;
-function offerNext(dur){
-  if(!playing||Rooms.room()!=='organum'||!curChord||curChord.final){loftOpts=null;Rooms.clear();return;}
-  var o=orgel.peek(40);o.wantEnd=orgel.wantEnd;loftOpts=o;Rooms.offer(o,dur);
-}
-function loftWants(){if(playing&&!loftOpts&&curChord&&!curChord.final)offerNext(Math.max(1.5,(nextAt-Date.now())/1000));}
 
 function unlockIOS(){
   try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
@@ -1632,10 +1315,9 @@ function start(){
   document.body.classList.add('playing');
   ui();V.wake();holdAwake();
   step();
-  setTimeout(function(){Rooms.relayout();},2100);
 }
 function stop(natural){
-  playing=false;timers.forEach(clearTimeout);timers=[];loftOpts=null;try{Rooms.clear();}catch(e){}
+  playing=false;timers.forEach(clearTimeout);timers=[];
   if(organ.ctx){
     var t=organ.ctx.currentTime;
     VOICE_KEYS.forEach(function(k){if(voices[k]){voices[k].stop(t+0.05,natural?0.5:3.5);voices[k]=null;}});
@@ -1643,7 +1325,7 @@ function stop(natural){
     setTimeout(function(){if(!playing){try{window._silent&&window._silent.pause();}catch(e){}}},5000);
   }
   document.body.classList.remove('playing');
-  letSleep();V.dim();ui();setTimeout(function(){try{Rooms.relayout();}catch(e){}},2100);
+  letSleep();V.dim();ui();
 }
 
 /* ---------------- ambitus ---------------- */
@@ -1765,8 +1447,6 @@ function build(){
   $('audiBtn').onclick=function(){organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();if(!playing)organ.fade(0.9,0.3);ringAngelus(true);};
   $('play').onclick=function(){playing?stop():start();};
   $('ordoBtn').onclick=function(){$('sheet').classList.add('open');};
-  [['organum','organum'],['navis','navis'],['crypta','crypta']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip'+(d[0]==='navis'?' on':'');b.dataset.v=d[0];b.textContent=d[1];
-    b.onclick=function(){$('sheet').classList.remove('open');setTimeout(function(){Rooms.goTo(d[0]);},350);};$('loca').appendChild(b);});
   $('closeSheet').onclick=function(){$('sheet').classList.remove('open');};
 }
 var sonusT;
@@ -1778,7 +1458,7 @@ function sonus(k){
 }
 function changed(harmony){
   save();
-  if(harmony){retune();orgel.set({key:S.key,mode:S.mode});if(playing){var dimNow=orgel.cur&&Orgel.DIMS[orgel.cur.kind];orgel.queue=dimNow?orgel.queue.slice(0,1):[];if(!dimNow)orgel.cur=null;orgel.pedalPoint=false;loftOpts=null;Rooms.clear();loftWants();}}
+  if(harmony){retune();orgel.set({key:S.key,mode:S.mode});if(playing){var dimNow=orgel.cur&&Orgel.DIMS[orgel.cur.kind];orgel.queue=dimNow?orgel.queue.slice(0,1):[];if(!dimNow)orgel.cur=null;orgel.pedalPoint=false;}}
   ui();
 }
 
@@ -1791,7 +1471,7 @@ var V=(function(){
   function mkSet(seed){var c=document.createElement('canvas');return {seed:seed,panes:[],stars:[],glass:c,gctx:c.getContext('2d'),tex:document.createElement('canvas')};}
   var C=mkSet(7),SD=mkSet(23),panes=C.panes,glass=C.glass,gctx=C.gctx,tex=C.tex;
   var introT=0,enterT=0,entered=true,La=0.2,shadeV=0,shadeT=0,relV=0,relT=0,lastF=0,lvAvg=0,bloomT=0,lastT=0,frame=0,L=0.2,lvlMax=0.02,awake=false,bloom=0,resolveT=-99;
-  var pulseT=[-99,-99,-99,-99,-99],paused=false,endDarkV=0;
+  var pulseT=[-99,-99,-99,-99,-99];
   var light={x:150,y:430,s:220,tx:150,ty:430,ts:220};   // where the light falls on the glass (window units)
   function now(){return performance.now()/1000;}
   function hex(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
@@ -2180,7 +1860,7 @@ var V=(function(){
     // light strength follows the organ's dynamics: crescendos swell it, relative to the recent loudest
     var dt0=Math.min(0.1,t-(lastF||t));lastF=t;
     if(t-skyT>5){skyT=t;computeSky();}
-    var endK=endT?Math.min(1,(t-endT)/13):0,endBack=endT&&t-endT>45?Math.min(1,(t-endT-45)/10):0;if(endBack>=1)endT=0;var endDark=endK*(1-endBack);endDarkV=endDark;
+    var endK=endT?Math.min(1,(t-endT)/13):0,endBack=endT&&t-endT>45?Math.min(1,(t-endT-45)/10):0;if(endBack>=1)endT=0;var endDark=endK*(1-endBack);
     var lv=(organ.ctx&&playing)?organ.level():0;
     lvAvg+=(lv-lvAvg)*(1-Math.exp(-dt0/0.9));            // average out the beating of the pipes
     lvlMax=Math.max(lvAvg,lvlMax*Math.exp(-dt0/40),0.004);
@@ -2197,7 +1877,6 @@ var V=(function(){
     var pv=[];for(var v=0;v<5;v++){var dt=t-pulseT[v];pv[v]=dt<0?0:(1-Math.exp(-dt/2.6))*Math.exp(-dt/9);}
     var rs=t-resolveT,rp=rs<0?0:(1-Math.exp(-rs/1.6))*Math.exp(-rs/6);
 
-    if(paused)return;   // another room is in view: keep the light's pulse, skip the painting
     // glass
     var acc=[0,0,0],wsum=0;
     function paint(set,s){var g=set.gctx,panes=set.panes,stars=set.stars,tex=set.tex;g.setTransform(DPR*s,0,0,DPR*s,0,0);g.clearRect(0,0,300,700);
@@ -2311,285 +1990,10 @@ var V=(function(){
     candlesLit:function(){return skyS.night>0.3;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
     intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
-    tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){},
-    pause:function(b){paused=!!b;},glow:function(){return {L:L,bloom:bloom,end:endDarkV,awake:awake};}};
+    tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){}};
 })();
 
 
-/* ---------------- the other rooms: the organ loft above, the crypt below ---------------- */
-var Rooms=(function(){
-  var ORDER=['organum','navis','crypta'],room='navis',busy=0,GAP1=0.25,GAP2=0.3;
-  var world=$('world'),loft=$('loftRoom'),crypt=$('cryptRoom');
-  var W=0,H=0,opts=null,picked=-1,lapK=0;
-  var NS='http://www.w3.org/2000/svg';
-  function px(n){return Math.round(n*10)/10;}
-  function rnd(seed){return function(){seed=(seed*16807)%2147483647;return seed/2147483647;};}
-
-  /* ---------- the organ loft ---------- */
-  var organEl=$('loftOrgan'),loftFg=$('loftFg'),loftTide=$('loftTide'),loftGlow=$('loftGlow'),cardsEl=$('loftCards');
-  function layoutLoft(){
-    var head=74,pt=panelTop(),ch=Math.round(Math.max(112,Math.min(170,H*0.15))),cw=Math.round(ch*0.8);
-    var cardsTop=pt-ch-14;
-    cardsEl.style.top=cardsTop+'px';cardsEl.style.height=ch+'px';cardsEl.style.gap=Math.round(cw*0.12)+'px';
-    cardsEl.dataset.cw=cw;cardsEl.dataset.ch=ch;
-    var avail=cardsTop-head-12,oh=avail,ow=oh*360/440;
-    if(ow>W*0.96){ow=W*0.96;oh=ow*440/360;}
-    var ox=(W-ow)/2,oy=head+(avail-oh)*0.5,k=ow/360;
-    organEl.style.left=px(ox)+'px';organEl.style.top=px(oy)+'px';organEl.style.width=px(ow)+'px';organEl.style.height=px(oh)+'px';
-    loftGlow.style.background='radial-gradient(circle '+Math.round(150*k)+'px at '+px(ox+70*k)+'px '+px(oy+236*k)+'px, rgba(255,170,80,.30), rgba(255,140,50,0)), radial-gradient(circle '+Math.round(150*k)+'px at '+px(ox+290*k)+'px '+px(oy+236*k)+'px, rgba(255,170,80,.30), rgba(255,140,50,0))';
-    loftTide.style.transformOrigin='50% '+Math.round((oy+oh*0.45)/H*100)+'%';
-    loftFg.innerHTML=foreground(ox,oy,k);
-    if(opts)drawCards();
-  }
-  function foreground(ox,oy,k){
-    var r=rnd(5),o=[];
-    o.push('<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><defs>'+
-      '<filter color-interpolation-filters="sRGB" id="lf1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="'+(1.1*k).toFixed(2)+'"/></filter>'+
-      '<filter color-interpolation-filters="sRGB" id="lf2" x="-30%" y="-5%" width="160%" height="110%"><feGaussianBlur stdDeviation="'+(3.2*k).toFixed(2)+'"/></filter>'+
-      '<linearGradient id="lrl" x1="0" x2="1"><stop offset="0" stop-color="#050403"/><stop offset=".7" stop-color="#0d0a07"/><stop offset="1" stop-color="#1a120a"/></linearGradient>'+
-      '<linearGradient id="lrr" x1="1" x2="0"><stop offset="0" stop-color="#050403"/><stop offset=".7" stop-color="#0d0a07"/><stop offset="1" stop-color="#1a120a"/></linearGradient>'+
-      '<linearGradient id="lrim" x1="0" x2="1"><stop offset="0" stop-color="#ffb35a" stop-opacity="0"/><stop offset="1" stop-color="#ffb35a" stop-opacity=".5"/></linearGradient>'+
-      '<linearGradient id="lrim2" x1="1" x2="0"><stop offset="0" stop-color="#ffb35a" stop-opacity="0"/><stop offset="1" stop-color="#ffb35a" stop-opacity=".5"/></linearGradient>'+
-      '<radialGradient id="lmo"><stop offset="0" stop-color="#fff2d0"/><stop offset="1" stop-color="#fff2d0" stop-opacity="0"/></radialGradient></defs>');
-    [ox+70*k,ox+290*k].forEach(function(lx){for(var i=0;i<8;i++){
-      o.push('<circle class="r-mote" style="animation-duration:'+(9+r()*8).toFixed(1)+'s;animation-delay:-'+(r()*17).toFixed(1)+'s" cx="'+px(lx+(r()-.5)*140*k)+'" cy="'+px(oy+(150+r()*180)*k)+'" r="'+((0.8+r()*1.4)*k).toFixed(2)+'" fill="url(#lmo)"/>');}});
-    // the gallery balustrade, close to the eye
-    var top=oy+384*k,rh=9*k,bh=50*k,base=top+rh+bh,step=26*k,x=((W%step)/2)+13*k;
-    o.push('<g filter="url(#lf1)"><rect x="-10" y="'+px(top)+'" width="'+(W+20)+'" height="'+px(rh)+'" rx="'+px(2*k)+'" fill="#1c120a"/>');
-    o.push('<rect x="-10" y="'+px(base)+'" width="'+(W+20)+'" height="'+px(Math.max(0,H-base+10))+'" fill="#0c0805"/><rect x="-10" y="'+px(base)+'" width="'+(W+20)+'" height="'+px(6*k)+'" fill="#1a110a"/>');
-    for(;x<W;x+=step){var bt=top+rh;
-      o.push('<rect x="'+px(x-2*k)+'" y="'+px(bt)+'" width="'+px(4*k)+'" height="'+px(bh)+'" fill="#120b06"/><ellipse cx="'+px(x)+'" cy="'+px(bt+bh*0.62)+'" rx="'+px(5.6*k)+'" ry="'+px(bh*0.27)+'" fill="#160e07"/>'+
-        '<rect x="'+px(x-6*k)+'" y="'+px(bt)+'" width="'+px(12*k)+'" height="'+px(3*k)+'" fill="#1a110a"/><rect x="'+px(x-6*k)+'" y="'+px(base-3*k)+'" width="'+px(12*k)+'" height="'+px(3*k)+'" fill="#1a110a"/>');}
-    o.push('</g><rect class="r-swell" x="-10" y="'+px(top)+'" width="'+(W+20)+'" height="'+px(2*k)+'" fill="#d99a50" opacity=".6"/>');
-    var cw=Math.max(34,W*0.075);
-    o.push('<g filter="url(#lf2)"><rect x="'+px(-cw*0.3)+'" y="-20" width="'+px(cw)+'" height="'+(H+40)+'" fill="url(#lrl)"/><rect x="'+px(W-cw*0.7)+'" y="-20" width="'+px(cw)+'" height="'+(H+40)+'" fill="url(#lrr)"/></g>');
-    o.push('<rect class="r-swell" x="'+px(cw*0.7-6*k)+'" y="0" width="'+px(6*k)+'" height="'+H+'" fill="url(#lrim)" filter="url(#lf2)"/><rect class="r-swell" x="'+px(W-cw*0.7)+'" y="0" width="'+px(6*k)+'" height="'+H+'" fill="url(#lrim2)" filter="url(#lf2)"/>');
-    o.push('</svg>');
-    return o.join('');
-  }
-
-  /* the cards: Orgel's three likeliest next chords; a glint runs once around each per chord */
-  function word(c){
-    if(c.final)return 'finis';if(c.amen)return 'amen';if(c.isHome)return 'reditus';
-    if(Orgel.DIMS[c.kind])return 'umbra';if(c.kind==='dom')return c.tritone?'tritonus':'tensio';
-    if(c.deceptive)return 'fallacia';if(c.sus)return 'suspensio';if(c.borrowed)return 'mutuatio';
-    if(c.subst)return c.third===4?'lux':'nebula';return 'iter';
-  }
-  function rrPath(cw,ch,r,m){var x0=m,y0=m,x1=cw-m,y1=ch-m,c=cw/2;
-    return 'M'+c+' '+y0+' L'+(x1-r)+' '+y0+' A'+r+' '+r+' 0 0 1 '+x1+' '+(y0+r)+' L'+x1+' '+(y1-r)+' A'+r+' '+r+' 0 0 1 '+(x1-r)+' '+y1+
-      ' L'+(x0+r)+' '+y1+' A'+r+' '+r+' 0 0 1 '+x0+' '+(y1-r)+' L'+x0+' '+(y0+r)+' A'+r+' '+r+' 0 0 1 '+(x0+r)+' '+y0+' Z';}
-  function cardHTML(i,o,cw,ch,dur,big){
-    var P=rrPath(cw,ch,12,2),id='oc'+i,secs=dur.toFixed(2)+'s',tail='';
-    for(var n=1;n<=6;n++)tail+='<path class="r-shim" style="animation-duration:'+secs+';animation-delay:'+(n*dur*0.012).toFixed(3)+'s;stroke-opacity:'+(0.62-n*0.09).toFixed(2)+'" pathLength="100" d="'+P+'" fill="none" stroke="#F4CF7E" stroke-width="'+(4.6-n*0.55).toFixed(2)+'" stroke-linecap="round" filter="url(#'+id+'s)"/>';
-    var c=o.chord,lab=c.label,fs=Math.round(ch*0.22);
-    return '<button type="button" class="ocard'+(picked===i?' sel':picked>=0?' other':'')+'" data-i="'+i+'" aria-label="'+lab.roman+' '+lab.symbol+', '+word(c)+'" style="width:'+cw+'px;height:'+ch+'px">'+
-      '<svg aria-hidden="true" width="'+(cw+40)+'" height="'+(ch+40)+'" viewBox="-20 -20 '+(cw+40)+' '+(ch+40)+'" style="position:absolute;left:-20px;top:-20px;overflow:visible"><defs>'+
-      '<filter color-interpolation-filters="sRGB" id="'+id+'h" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="'+(4+i)+'"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 .82  0 0 0 0 .55  0 0 0 1 -.3"/></filter>'+
-      '<filter color-interpolation-filters="sRGB" id="'+id+'p" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".07" numOctaves="3" seed="'+(9+i)+'"/><feColorMatrix values="0 0 0 0 .16  0 0 0 0 .10  0 0 0 0 .04  0 0 0 1.4 -.55"/></filter>'+
-      '<filter color-interpolation-filters="sRGB" id="'+id+'s" filterUnits="userSpaceOnUse" x="-20" y="-20" width="'+(cw+40)+'" height="'+(ch+40)+'"><feGaussianBlur stdDeviation="1.6"/></filter>'+
-      '<filter color-interpolation-filters="sRGB" id="'+id+'g" filterUnits="userSpaceOnUse" x="-20" y="-20" width="'+(cw+40)+'" height="'+(ch+40)+'"><feGaussianBlur stdDeviation="4.5"/></filter>'+
-      '<filter color-interpolation-filters="sRGB" id="'+id+'t" filterUnits="userSpaceOnUse" x="-20" y="-20" width="'+(cw+40)+'" height="'+(ch+40)+'"><feGaussianBlur stdDeviation=".9"/></filter>'+
-      '<linearGradient id="'+id+'cs" x1="0" x2="1" y1="0" y2=".35"><stop offset="0" stop-color="#ffe9c0" stop-opacity="0"/><stop offset=".42" stop-color="#ffe9c0" stop-opacity=".05"/><stop offset=".5" stop-color="#fff4dc" stop-opacity=".32"/><stop offset=".58" stop-color="#ffe9c0" stop-opacity=".05"/><stop offset="1" stop-color="#ffe9c0" stop-opacity="0"/></linearGradient>'+
-      '<radialGradient id="'+id+'mg" cx=".5" cy=".46" r=".62"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset=".55" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="1"/></radialGradient>'+
-      '<mask id="'+id+'mk"><rect width="'+cw+'" height="'+ch+'" fill="url(#'+id+'mg)"/></mask>'+
-      '<clipPath id="'+id+'cl"><rect width="'+cw+'" height="'+ch+'" rx="14"/></clipPath>'+
-      '<radialGradient id="'+id+'d" cx=".46" cy=".4" r=".72"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".22"/><stop offset=".45" stop-color="#c08848" stop-opacity=".08"/><stop offset="1" stop-color="#2a1806" stop-opacity=".14"/></radialGradient>'+
-      '<linearGradient id="'+id+'sh" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffe3b0" stop-opacity=".16"/><stop offset=".35" stop-color="#ffe3b0" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient></defs>'+
-      '<g clip-path="url(#'+id+'cl)"><g mask="url(#'+id+'mk)"><rect width="'+cw+'" height="'+ch+'" filter="url(#'+id+'p)" opacity=".3"/><rect width="'+cw+'" height="'+ch+'" filter="url(#'+id+'h)" opacity=".38"/></g>'+
-      '<rect width="'+cw+'" height="'+ch+'" fill="url(#'+id+'d)"/><rect width="'+cw+'" height="'+ch+'" fill="url(#'+id+'sh)"/>'+
-      '<rect class="r-csheen" style="animation-delay:-'+(i*1.3+0.4).toFixed(1)+'s" width="'+cw+'" height="'+ch+'" fill="url(#'+id+'cs)" mask="url(#'+id+'mk)"/></g>'+
-      '<path class="r-base" d="'+P+'" fill="none" stroke="#E6C46E" stroke-width="2" filter="url(#'+id+'s)"/>'+
-      '<path class="r-ring" style="animation-duration:'+secs+'" pathLength="100" d="'+P+'" fill="none" stroke="#E6C46E" stroke-opacity=".34" stroke-width="2" filter="url(#'+id+'s)"/>'+
-      '<path d="M'+cw/2+' -3 L'+(cw/2+3.2)+' 2 L'+cw/2+' 7 L'+(cw/2-3.2)+' 2 Z" fill="#E6C46E" fill-opacity=".85" stroke="#FFF1CC" stroke-opacity=".5" stroke-width=".6"/>'+
-      '<line x1="'+cw/2+'" y1="-8" x2="'+cw/2+'" y2="-4" stroke="#E6C46E" stroke-opacity=".5" stroke-width="1"/>'+tail+
-      '<path class="r-shim" style="animation-duration:'+secs+'" pathLength="100" d="'+P+'" fill="none" stroke="#FFD98A" stroke-width="12" stroke-linecap="round" stroke-opacity=".75" filter="url(#'+id+'g)"/>'+
-      '<path class="r-shim" style="animation-duration:'+secs+'" pathLength="100" d="'+P+'" fill="none" stroke="#FFFBEE" stroke-width="3" stroke-linecap="round" filter="url(#'+id+'t)"/></svg>'+
-      '<span class="rn" style="font-size:'+Math.round(fs*0.48)+'px">'+lab.roman+'</span><span class="sy" style="font-size:'+fs+'px">'+lab.symbol+'</span><span class="wd" style="font-size:'+Math.round(fs*0.48)+'px">'+word(c)+'</span></button>';
-  }
-  var lapEnd=0;
-  function drawCards(){
-    if(!opts||!opts.length){cardsEl.innerHTML='';cardsEl.classList.remove('on');return;}
-    var cw=+cardsEl.dataset.cw,ch=+cardsEl.dataset.ch,left=Math.max(0.5,(lapEnd-performance.now())/1000),full=opts.dur;
-    // the glint keeps Orgel's time: if we join late, it starts partway round
-    var html='';opts.forEach(function(o,i){html+=cardHTML(i,o,cw,ch,full,false);});
-    cardsEl.innerHTML=html;cardsEl.classList.add('on');
-    var gone=full-left;[].forEach.call(cardsEl.querySelectorAll('.r-shim,.r-ring'),function(el){var d=parseFloat(el.style.animationDelay||0)||0;el.style.animationDelay=(d-gone).toFixed(3)+'s';});
-    [].forEach.call(cardsEl.querySelectorAll('.ocard'),function(b){b.onclick=function(){picked=+b.dataset.i;mark();};});
-  }
-  function mark(){[].forEach.call(cardsEl.querySelectorAll('.ocard'),function(b,i){b.classList.toggle('sel',picked===i);b.classList.toggle('other',picked>=0&&picked!==i);});}
-
-  /* ---------- the crypt ---------- */
-  var cryptSvg=$('cryptVault'),cryptFg=$('cryptFg'),cryptTide=$('cryptTide');
-  var MKEY='cathedra.memento',names=[];
-  try{names=JSON.parse(localStorage.getItem(MKEY)||'[]')||[];}catch(e){names=[];}
-  function saveNames(){try{localStorage.setItem(MKEY,JSON.stringify(names));}catch(e){}}
-  function layoutCrypt(){
-    var k=H/844,cx=W/2,vy=H*0.39,o=[],r=rnd(12),pt=panelTop();
-    o.push('<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><defs>'+
-      '<filter color-interpolation-filters="sRGB" id="cst" x="0" y="0" width="100%" height="100%" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="'+(0.75/k).toFixed(3)+'" numOctaves="3" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 .55  0 0 0 0 .52  0 0 0 0 .48  .9 .9 .9 0 -.6" result="g"/><feTurbulence type="fractalNoise" baseFrequency="'+(0.035/k).toFixed(4)+'" numOctaves="2" seed="8" result="m"/><feColorMatrix in="m" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -.55" result="mm"/><feComposite in="g" in2="SourceGraphic" operator="in" result="gi"/><feComposite in="mm" in2="SourceGraphic" operator="in" result="mi"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="mi"/><feMergeNode in="gi"/></feMerge></filter>'+
-      '<radialGradient id="ctg"><stop offset="0" stop-color="#ffb060" stop-opacity=".22"/><stop offset="1" stop-color="#ff8a30" stop-opacity="0"/></radialGradient>'+
-      '<radialGradient id="cvg"><stop offset="0" stop-color="#ff7a48" stop-opacity=".55"/><stop offset="1" stop-color="#ff4a20" stop-opacity="0"/></radialGradient>'+
-      '<radialGradient id="cwg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffa060" stop-opacity=".42"/><stop offset=".45" stop-color="#e0703a" stop-opacity=".14"/><stop offset="1" stop-color="#c05020" stop-opacity="0"/></radialGradient>'+
-      '<radialGradient id="cmo"><stop offset="0" stop-color="#ffe2c0"/><stop offset="1" stop-color="#ffe2c0" stop-opacity="0"/></radialGradient></defs>');
-    o.push('<rect width="'+W+'" height="'+H+'" fill="#070605"/><g filter="url(#cst)">');
-    var torches=[];
-    for(var j=5;j>=0;j--){
-      var f=Math.pow(0.42,j*0.42),hw=190*f*1.05*k,top=vy-250*f*k,base=vy+210*f*k,pw=46*f*k,spring=top+hw*1.05;
-      if(j===0)base=H+4;
-      var c=Math.round(18+29*(1-j/5)),stone='rgb('+(c+7)+','+(c+4)+','+c+')';
-      var x0=cx-hw-pw,x1=cx+hw+pw;if(j===0){x0=Math.min(x0,-2);x1=Math.max(x1,W+2);}
-      o.push('<path d="M'+px(x0)+' '+px(base)+' L'+px(x0)+' '+px(top)+' L'+px(x1)+' '+px(top)+' L'+px(x1)+' '+px(base)+' L'+px(cx+hw)+' '+px(base)+' L'+px(cx+hw)+' '+px(spring)+' A'+px(hw)+' '+px(hw)+' 0 0 0 '+px(cx-hw)+' '+px(spring)+' L'+px(cx-hw)+' '+px(base)+' Z" fill="'+stone+'"/>');
-      if(j===0)o.push('<rect x="-2" y="-2" width="'+(W+4)+'" height="'+px(top+2)+'" fill="'+stone+'"/>');
-      var ring=14*f*k,sw=Math.max(0.4,1.1*f*k).toFixed(2);
-      o.push('<path d="M'+px(cx-hw-ring)+' '+px(spring)+' A'+px(hw+ring)+' '+px(hw+ring)+' 0 0 1 '+px(cx+hw+ring)+' '+px(spring)+'" fill="none" stroke="rgb('+(c+14)+','+(c+10)+','+(c+6)+')" stroke-width="'+px(ring*1.9)+'"/>');
-      for(var i=0;i<=13;i++){var a=Math.PI*i/13;
-        o.push('<line x1="'+px(cx-Math.cos(a)*hw)+'" y1="'+px(spring-Math.sin(a)*hw)+'" x2="'+px(cx-Math.cos(a)*(hw+ring*1.9))+'" y2="'+px(spring-Math.sin(a)*(hw+ring*1.9))+'" stroke="#050403" stroke-width="'+sw+'" stroke-opacity=".8"/>');}
-      o.push('<path d="M'+px(cx-hw)+' '+px(spring)+' A'+px(hw)+' '+px(hw)+' 0 0 1 '+px(cx+hw)+' '+px(spring)+'" fill="none" stroke="#040302" stroke-width="'+Math.max(0.5,1.4*f*k).toFixed(2)+'"/>');
-      var chh=17*f*k,row=0,y=base-chh;
-      while(y>top){var off=(row%2)*pw*0.5;
-        [[x0,cx-hw],[cx+hw,x1]].forEach(function(pr){
-          o.push('<line x1="'+px(pr[0])+'" y1="'+px(y)+'" x2="'+px(pr[1])+'" y2="'+px(y)+'" stroke="#050403" stroke-width="'+sw+'" stroke-opacity=".75"/>');
-          for(var vx=pr[0]+off+pw*0.5;vx<pr[1];vx+=pw)o.push('<line x1="'+px(vx)+'" y1="'+px(y)+'" x2="'+px(vx)+'" y2="'+px(y+chh)+'" stroke="#050403" stroke-width="'+sw+'" stroke-opacity=".6"/>');
-        });y-=chh;row++;}
-      [cx-hw-pw,cx+hw].forEach(function(sx){o.push('<rect x="'+px(sx-2*f*k)+'" y="'+px(spring-6*f*k)+'" width="'+px(pw+4*f*k)+'" height="'+px(8*f*k)+'" fill="rgb('+(c+16)+','+(c+12)+','+(c+8)+')" stroke="#050403" stroke-width=".6"/>');});
-      if(j===2)torches=[[cx-hw-pw/2,spring+44*f*k,f*k],[cx+hw+pw/2,spring+44*f*k,f*k]];
-    }
-    o.push('</g>');
-    // the altar, unlit, and the one who sits against it
-    var s=k,b='#837868';
-    o.push('<rect x="'+px(cx-24*s)+'" y="'+px(vy-2*s)+'" width="'+px(48*s)+'" height="'+px(28*s)+'" fill="#15120f"/><rect x="'+px(cx-28*s)+'" y="'+px(vy-6*s)+'" width="'+px(56*s)+'" height="'+px(5*s)+'" fill="#1b1814"/>');
-    o.push('<line x1="'+cx+'" y1="'+px(vy-6*s)+'" x2="'+cx+'" y2="'+px(vy-28*s)+'" stroke="#1d1915" stroke-width="'+px(2*s)+'"/><line x1="'+px(cx-6*s)+'" y1="'+px(vy-20*s)+'" x2="'+px(cx+6*s)+'" y2="'+px(vy-20*s)+'" stroke="#1d1915" stroke-width="'+px(2*s)+'"/>');
-    var sk=skeleton(cx,vy,s,b);o.push(sk);
-    torches.forEach(function(t){var tx=t[0],ty=t[1],f=t[2];
-      o.push('<circle class="r-torch" cx="'+px(tx)+'" cy="'+px(ty-10*f)+'" r="'+px(70*f+24*k)+'" fill="url(#ctg)" style="mix-blend-mode:screen"/>');
-      o.push('<path d="M'+px(tx-5*f)+' '+px(ty+6*f)+' L'+px(tx+5*f)+' '+px(ty+6*f)+' L'+px(tx+2.4*f)+' '+px(ty+16*f)+' L'+px(tx-2.4*f)+' '+px(ty+16*f)+' Z M'+px(tx)+' '+px(ty+16*f)+' L'+px(tx)+' '+px(ty+26*f)+'" fill="#120e0a" stroke="#0a0806" stroke-width=".8"/>');
-      o.push('<rect x="'+px(tx-1.6*f)+'" y="'+px(ty-4*f)+'" width="'+px(3.2*f)+'" height="'+px(12*f)+'" fill="#2a1a0e"/>');
-      o.push('<ellipse class="r-torch" cx="'+px(tx)+'" cy="'+px(ty-8*f)+'" rx="'+px(2.6*f)+'" ry="'+px(6*f)+'" fill="#ffb460" opacity=".75"/><ellipse class="r-torch" cx="'+px(tx)+'" cy="'+px(ty-7*f)+'" rx="'+px(1.1*f)+'" ry="'+px(2.8*f)+'" fill="#fff0c8" opacity=".85"/>');});
-    // the votive stand: the crypt's real light. Five burn for all the faithful departed, one more for each name
-    var ry=Math.min(H*0.732,pt-70*k),sp=43*k,rx0=cx-sp*2.5,lit=Math.min(12,5+names.length),order=[0,4,8,2,10,6,1,9,3,11,5,7];
-    o.push('<ellipse class="r-swell" cx="'+cx+'" cy="'+px(ry+10*k)+'" rx="'+px(300*k)+'" ry="'+px(230*k)+'" fill="url(#cwg)" style="mix-blend-mode:screen"/>');
-    o.push('<ellipse class="r-swell" cx="'+cx+'" cy="'+px(ry+90*k)+'" rx="'+px(210*k)+'" ry="'+px(40*k)+'" fill="url(#cwg)" style="mix-blend-mode:screen"/>');
-    o.push('<path d="M'+px(rx0-28*k)+' '+px(ry)+' L'+px(rx0+5*sp+28*k)+' '+px(ry)+' M'+px(rx0-28*k)+' '+px(ry+34*k)+' L'+px(rx0+5*sp+28*k)+' '+px(ry+34*k)+' M'+px(rx0-22*k)+' '+px(ry)+' L'+px(rx0-30*k)+' '+px(ry+80*k)+' M'+px(rx0+5*sp+22*k)+' '+px(ry)+' L'+px(rx0+5*sp+30*k)+' '+px(ry+80*k)+'" stroke="#1b1712" stroke-width="'+px(3*k)+'"/>');
-    var on={};for(var q=0;q<lit;q++)on[order[q]]=1;
-    for(var rr=0;rr<2;rr++)for(var ii=0;ii<6;ii++){
-      var x=rx0+ii*sp,y=ry-14*k+rr*34*k,idx=rr*6+ii;
-      o.push('<path d="M'+px(x-9*k)+' '+px(y)+' L'+px(x+9*k)+' '+px(y)+' L'+px(x+7*k)+' '+px(y+14*k)+' L'+px(x-7*k)+' '+px(y+14*k)+' Z" fill="#5a1410" stroke="#200604" stroke-width=".8" opacity="'+(on[idx]?.95:.5)+'"/>');
-      if(!on[idx])continue;
-      o.push('<circle class="r-votive" style="mix-blend-mode:screen;animation-delay:-'+(idx*0.37).toFixed(2)+'s" cx="'+px(x)+'" cy="'+px(y+4*k)+'" r="'+px(30*k)+'" fill="url(#cvg)"/>');
-      o.push('<ellipse class="r-votive" style="animation-delay:-'+(idx*0.37).toFixed(2)+'s" cx="'+px(x)+'" cy="'+px(y+2*k)+'" rx="'+px(1.6*k)+'" ry="'+px(3.6*k)+'" fill="#ffe6b8"/>');
-      var nd=1+Math.floor(r()*3);
-      for(var d=0;d<nd;d++){var dx=(r()*15-7.5)*k,ln=(4+r()*7)*k,w=(1.4+r())*k;
-        o.push('<path class="r-drip" style="animation-duration:'+Math.round(30+r()*30)+'s;animation-delay:-'+Math.round(r()*60)+'s" d="M'+px(x+dx-w/2)+' '+px(y-0.5)+' L'+px(x+dx+w/2)+' '+px(y-0.5)+' L'+px(x+dx+w/2)+' '+px(y+ln)+' A'+(w/2).toFixed(2)+' '+(w/2).toFixed(2)+' 0 0 1 '+px(x+dx-w/2)+' '+px(y+ln)+' Z" fill="#9c2218"/>');}
-      o.push('<path d="M'+px(x-9.5*k)+' '+px(y-0.5)+' Q'+px(x)+' '+px(y-2.2*k)+' '+px(x+9.5*k)+' '+px(y-0.5)+' L'+px(x+9.5*k)+' '+px(y+k)+' L'+px(x-9.5*k)+' '+px(y+k)+' Z" fill="#a8281c"/>');
-      if(r()<0.5){var fx=x+(r()<.5?-1:1)*(5+r()*3)*k;
-        o.push('<ellipse class="r-fall" style="--d:'+Math.round(ry+80*k-(y+14*k))+'px;animation-duration:'+Math.round(35+r()*35)+'s;animation-delay:-'+Math.round(r()*70)+'s" cx="'+px(fx)+'" cy="'+px(y+14*k)+'" rx="'+px(k)+'" ry="'+px(1.6*k)+'" fill="#a8281c"/>');}
-    }
-    for(var m=0;m<16;m++)o.push('<circle class="r-mote" style="animation-duration:'+(10+r()*8).toFixed(1)+'s;animation-delay:-'+(r()*18).toFixed(1)+'s" cx="'+px(cx+(r()-.5)*270*k)+'" cy="'+px(ry-(r()*170)*k)+'" r="'+((0.7+r()*1.1)*k).toFixed(2)+'" fill="url(#cmo)"/>');
-    o.push('</svg>');
-    cryptSvg.innerHTML=o.join('');
-    // foreground: the near columns, and the skeleton's ghost that survives the dark
-    var cw=Math.max(62*k,W*0.06);
-    cryptFg.innerHTML='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><defs><filter color-interpolation-filters="sRGB" id="cb1" x="-30%" y="-10%" width="160%" height="120%"><feGaussianBlur stdDeviation="'+(3.5*k).toFixed(2)+'"/></filter>'+
-      '<linearGradient id="ccl" x1="0" x2="1"><stop offset="0" stop-color="#070605"/><stop offset=".55" stop-color="#1a1612"/><stop offset=".85" stop-color="#2e2016"/><stop offset="1" stop-color="#3a2618"/></linearGradient>'+
-      '<linearGradient id="ccr" x1="1" x2="0"><stop offset="0" stop-color="#070605"/><stop offset=".55" stop-color="#1a1612"/><stop offset=".85" stop-color="#2e2016"/><stop offset="1" stop-color="#3a2618"/></linearGradient></defs>'+
-      '<g opacity=".2"><g class="r-swell">'+sk+'</g></g>'+
-      '<g filter="url(#cb1)"><rect x="'+px(-cw*0.42)+'" y="-20" width="'+px(cw)+'" height="'+(H+40)+'" fill="url(#ccl)"/><rect x="'+px(-cw*0.55)+'" y="'+px(H*0.3)+'" width="'+px(cw*1.3)+'" height="'+px(16*k)+'" fill="#120f0c"/>'+
-      '<rect x="'+px(W-cw*0.58)+'" y="-20" width="'+px(cw)+'" height="'+(H+40)+'" fill="url(#ccr)"/><rect x="'+px(W-cw*0.75)+'" y="'+px(H*0.3)+'" width="'+px(cw*1.3)+'" height="'+px(16*k)+'" fill="#120f0c"/></g>'+
-      '<g opacity=".38"><rect class="r-swell" x="'+px(cw*0.5)+'" y="'+px(H*0.45)+'" width="'+px(5*k)+'" height="'+px(H*0.55)+'" fill="#c47a40" filter="url(#cb1)"/><rect class="r-swell" x="'+px(W-cw*0.5-5*k)+'" y="'+px(H*0.45)+'" width="'+px(5*k)+'" height="'+px(H*0.55)+'" fill="#c47a40" filter="url(#cb1)"/></g></svg>';
-    cryptTide.style.transformOrigin='50% '+Math.round((ry+10*k)/H*100)+'%';
-    cryptTide.style.background='radial-gradient(ellipse '+Math.round(140*k)+'px '+Math.round(220*k)+'px at 50% '+Math.round(ry+10*k)+'px, rgba(1,1,1,0) 0%, rgba(1,1,1,.42) 45%, rgba(1,1,1,.84) 72%, rgba(0,0,0,.97) 100%)';
-    var ml=$('memento');ml.style.top='auto';ml.style.bottom=Math.round(H-(ry-26*k))+'px';
-    renderNames();
-  }
-  function skeleton(cx,vy,s,b){
-    function P(x,y){return px(cx+x*s)+' '+px(vy+y*s);}
-    return '<g stroke="'+b+'" stroke-width="'+(1.1*s).toFixed(2)+'" stroke-linecap="round" fill="none" opacity=".9">'+
-      '<path d="M'+P(-1,20)+' Q'+P(-2,12)+' '+P(-2.5,5)+'"/><ellipse cx="'+px(cx-2*s)+'" cy="'+px(vy+9*s)+'" rx="'+px(4.4*s)+'" ry="'+px(4*s)+'"/>'+
-      '<path d="M'+P(-6,8)+' Q'+P(-2,6)+' '+P(2,8)+' M'+P(-6,10.5)+' Q'+P(-2,8.5)+' '+P(2,10.5)+'"/><path d="M'+P(-7,4.5)+' L'+P(3,4.5)+'"/>'+
-      '<path d="M'+P(-7,4.5)+' L'+P(-9,12)+' L'+P(-6,19)+'"/><path d="M'+P(3,4.5)+' L'+P(5,12)+' L'+P(6.5,20)+'"/>'+
-      '<ellipse cx="'+px(cx-0.5*s)+'" cy="'+px(vy+21*s)+'" rx="'+px(4.5*s)+'" ry="'+px(2*s)+'"/>'+
-      '<path d="M'+P(-3,21.5)+' L'+P(-8,15.5)+' L'+P(-10,26)+'"/><path d="M'+P(2.5,22)+' L'+P(10,24.5)+' L'+P(17,26.5)+'"/></g>'+
-      '<circle cx="'+px(cx-3.2*s)+'" cy="'+px(vy+0.5*s)+'" r="'+px(3.3*s)+'" fill="'+b+'" opacity=".9"/>'+
-      '<circle cx="'+px(cx-4.5*s)+'" cy="'+px(vy+0.3*s)+'" r="'+px(0.8*s)+'" fill="#0a0806"/><circle cx="'+px(cx-2*s)+'" cy="'+px(vy+0.6*s)+'" r="'+px(0.8*s)+'" fill="#0a0806"/>'+
-      '<path d="M'+P(-5,3)+' L'+P(-1.5,3.4)+'" stroke="'+b+'" stroke-width="'+px(1.4*s)+'"/>';
-  }
-  function renderNames(){
-    var box=$('mementoNames');box.innerHTML='';
-    names.forEach(function(n,i){var b=document.createElement('button');b.type='button';b.className='nomen';b.textContent=n;
-      b.setAttribute('aria-label',n+'. Tap twice to put out the candle.');
-      b.onclick=function(){if(b.classList.contains('ask')){names.splice(i,1);saveNames();layoutCrypt();}else{b.classList.add('ask');b.textContent='exstingue?';setTimeout(function(){if(b.isConnected){b.classList.remove('ask');b.textContent=n;}},2600);}};
-      box.appendChild(b);});
-  }
-  $('accendeBtn').onclick=function(){$('accendeForm').hidden=false;$('nomenIn').value='';setTimeout(function(){$('nomenIn').focus();},50);};
-  $('accendeForm').onsubmit=function(e){e.preventDefault();var v=($('nomenIn').value||'').trim().slice(0,40);
-    if(v){names.push(v);if(names.length>24)names.shift();saveNames();layoutCrypt();}$('accendeForm').hidden=true;};
-  $('nomenCancel').onclick=function(){$('accendeForm').hidden=true;};
-
-  /* ---------- moving between rooms ---------- */
-  function panelTop(){var t=H-170;try{var p=$('panel').getBoundingClientRect();if(p.top>H*0.4)t=p.top;}catch(e){}if(!document.body.classList.contains('playing'))t=Math.max(t,H-130);return t;}
-  function offset(name){return name==='organum'?H+Math.round(H*GAP1):name==='crypta'?-(H+Math.round(H*GAP2)):0;}
-  function place(){
-    W=innerWidth;H=innerHeight;
-    loft.style.top=-(H+Math.round(H*GAP1))+'px';crypt.style.top=(H+Math.round(H*GAP2))+'px';
-    loft.style.height=crypt.style.height=H+'px';
-    world.style.transition='none';world.style.transform='translateY('+offset(room)+'px)';void world.offsetHeight;world.style.transition='';
-    layoutLoft();layoutCrypt();
-  }
-  function go(dir){
-    if(!document.body.classList.contains('entered'))return;
-    var i=ORDER.indexOf(room),n=Math.max(0,Math.min(2,i+dir));
-    if(n===i||performance.now()-busy<1200)return;
-    busy=performance.now();var from=room;room=ORDER[n];
-    $('accendeForm').hidden=true;
-    if(room!=='navis')V.pause(false);   // keep painting the nave while it slides away
-    loft.classList.toggle('off',room!=='organum'&&from!=='organum');crypt.classList.toggle('off',room!=='crypta'&&from!=='crypta');
-    world.classList.remove('mba','mbb');void world.offsetWidth;world.classList.add(lapK++%2?'mbb':'mba');
-    world.style.transform='translateY('+offset(room)+'px)';
-    document.body.classList.remove('room-organum','room-crypta');if(room!=='navis')document.body.classList.add('room-'+room);
-    try{organ.room(room,1.2);}catch(e){}
-    setTimeout(function(){if(room!=='navis')V.pause(true);loft.classList.toggle('off',room!=='organum');crypt.classList.toggle('off',room!=='crypta');},1200);
-    if(room==='organum')enterLoft();
-    [].forEach.call(document.querySelectorAll('#loca .chip'),function(b){b.classList.toggle('on',b.dataset.v===room);});
-  }
-  function goTo(name){var d=ORDER.indexOf(name)-ORDER.indexOf(room);if(d)go(d>0?1:-1),Math.abs(d)>1&&setTimeout(function(){go(d>0?1:-1);},1250);}
-  function enterLoft(){if(typeof loftWants==='function')loftWants();}
-
-  // light: the rooms breathe with the organ, the same pulse the window follows
-  var swellEls=[];
-  function frame(){
-    requestAnimationFrame(frame);
-    if(room==='navis'&&performance.now()-busy>1300)return;
-    var g=V.glow(),s=Math.max(0,Math.min(1,g.L)),b=g.bloom||0,e=1-0.9*(g.end||0);
-    loftTide.style.transform='scale('+(1+0.5*s+0.12*b).toFixed(3)+')';
-    cryptTide.style.transform='scale('+(1.25+0.35*s+0.08*b).toFixed(3)+')';
-    var op=((0.3+0.7*s)*e).toFixed(3);
-    world.style.setProperty('--sw',op);
-  }
-  requestAnimationFrame(frame);
-
-  // touch, wheel and keys
-  var ty=null,tx=null,tt=0;
-  document.addEventListener('touchstart',function(e){var t=e.touches[0];if(!t||e.touches.length>1)return;
-    if(e.target.closest&&e.target.closest('#sheet,input,form'))return;ty=t.clientY;tx=t.clientX;tt=performance.now();},{passive:true});
-  document.addEventListener('touchend',function(e){if(ty==null)return;var t=e.changedTouches[0],dy=t.clientY-ty,dx=t.clientX-tx;
-    if(Math.abs(dy)>60&&Math.abs(dy)>Math.abs(dx)*1.5&&performance.now()-tt<900&&!$('sheet').classList.contains('open'))go(dy<0?1:-1);ty=null;},{passive:true});
-  var wacc=0,wt=0;
-  document.addEventListener('wheel',function(e){if($('sheet').classList.contains('open'))return;var n=performance.now();if(n-wt>400)wacc=0;wt=n;wacc+=e.deltaY;
-    if(Math.abs(wacc)>80){go(wacc>0?1:-1);wacc=0;}},{passive:true});
-  $('toNavisDown').onclick=function(){go(1);};$('toNavisUp').onclick=function(){go(-1);};
-  addEventListener('resize',function(){place();});
-
-  return {
-    place:place,go:go,goTo:goTo,room:function(){return room;},
-    // the next chord's choices, and how long until Orgel decides
-    offer:function(list,dur){opts=list&&list.length?list:null;if(opts)opts.dur=dur;picked=-1;lapEnd=performance.now()+dur*1000;drawCards();},
-    clear:function(){opts=null;picked=-1;drawCards();},
-    picked:function(){return picked;},
-    relayout:function(){layoutLoft();layoutCrypt();}
-  };
-})();
-
-Rooms.place();
 /* ---------------- the readings ---------------- */
 var lectioIdx=0;
 function lectio(){
@@ -2623,7 +2027,6 @@ $('gate').onclick=function(){
   V.enter();V.bell();
   $('gate').classList.add('gone');document.body.classList.remove('intro');
   setTimeout(function(){$('gate').hidden=true;},2400);
-  Rooms.place();
 };
 // on a computer or TV: F for full screen, space to begin or pause; the cursor and controls rest when the mouse does
 document.addEventListener('keydown',function(e){
@@ -2635,8 +2038,6 @@ document.addEventListener('keydown',function(e){
     e.preventDefault();}
   else if(e.key===' '){$('play').click();e.preventDefault();}
   else if(e.key==='Escape'){$('sheet').classList.remove('open');}
-  else if(e.key==='ArrowUp'&&!$('sheet').classList.contains('open')){Rooms.go(-1);e.preventDefault();}
-  else if(e.key==='ArrowDown'&&!$('sheet').classList.contains('open')){Rooms.go(1);e.preventDefault();}
 });
 if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches){
   var calmT=0;function stir(){document.body.classList.remove('calm');clearTimeout(calmT);
