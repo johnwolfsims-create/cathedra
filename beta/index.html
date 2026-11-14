@@ -37,7 +37,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .room.off{display:none}
 .room>canvas{position:absolute;left:0;top:0;display:block}
 body.room-organum #nave,body.room-crypta #nave{visibility:hidden}
-#transCv{position:fixed;left:0;top:0;display:block}
+#transBox{position:fixed;inset:0;background:#000;overflow:hidden}
+#transBox canvas{position:absolute;left:0;top:0;display:block;will-change:transform,opacity;backface-visibility:hidden}
 @keyframes roomIn{from{opacity:0}to{opacity:1}}
 .room .roomhead,.room .roomnav,#memento,#loftHits{animation:roomIn 1.4s ease 1.2s both}
 .roomhead{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 18px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;text-align:center}
@@ -146,7 +147,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <div id="memento"><span class="sc">memento</span><div id="mementoNames"></div><button id="accendeBtn" type="button">+ accende</button></div>
   <form id="accendeForm" hidden><label for="nomenIn" style="position:absolute;left:-9999px">nomen</label><input id="nomenIn" placeholder="pro quo oras" maxlength="40" autocomplete="off"><button type="submit">accende</button><button type="button" id="nomenCancel" aria-label="Cancel">×</button></form>
 </div>
-<canvas id="transCv" hidden aria-hidden="true"></canvas>
+<div id="transBox" hidden aria-hidden="true"><canvas id="transA"></canvas><canvas id="transB"></canvas></div>
 </div>
 <button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
@@ -1409,7 +1410,6 @@ function start(){
   document.body.classList.add('playing');
   ui();V.wake();holdAwake();
   step();
-  setTimeout(function(){Rooms.relayout();},2100);
 }
 function stop(natural){
   playing=false;timers.forEach(clearTimeout);timers=[];loftOpts=null;try{Rooms.clear();}catch(e){}
@@ -1420,7 +1420,7 @@ function stop(natural){
     setTimeout(function(){if(!playing){try{window._silent&&window._silent.pause();}catch(e){}}},5000);
   }
   document.body.classList.remove('playing');
-  letSleep();V.dim();ui();setTimeout(function(){try{Rooms.relayout();}catch(e){}},2100);
+  letSleep();V.dim();ui();
 }
 
 /* ---------------- ambitus ---------------- */
@@ -2099,7 +2099,7 @@ var PIPES={"svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"360\" heigh
    the flames, the dust, the wax and the glint. No live SVG, no CSS filters. */
 var Rooms=(function(){
   var ORDER=['organum','navis','crypta'],room='navis';
-  var loftEl=$('loftRoom'),cryptEl=$('cryptRoom'),lcv=$('loftCv'),ccv=$('cryptCv'),tcv=$('transCv'),hits=$('loftHits');
+  var loftEl=$('loftRoom'),cryptEl=$('cryptRoom'),lcv=$('loftCv'),ccv=$('cryptCv'),tbox=$('transBox'),tA=$('transA'),tB=$('transB'),hits=$('loftHits');
   var W=0,H=0,DPR=1,trans=null,lastDraw=0;
   function mk(w,h){var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;}
   function rnd(seed){return function(){seed=(seed*16807)%2147483647;return seed/2147483647;};}
@@ -2316,7 +2316,7 @@ var Rooms=(function(){
       x.fillRect(tx-0.5*f,ty+16*f,f,10*f);x.fillStyle='#2a1a0e';x.fillRect(tx-1.6*f,ty-4*f,3.2*f,12*f);});
     C.torches=torches;
     // the votive stand: one candle for each name, no more, no fewer
-    var ry=Math.min(H*0.732,pt-70*k),sp=43*k,rx0=cx-sp*2.5;C.ry=ry;C.k=k;C.cx=cx;C.glow=Math.min(1,Math.sqrt(Math.min(12,names.length)/5));
+    var ry=Math.min(H*0.70,pt-80*k),sp=43*k,rx0=cx-sp*2.5;C.ry=ry;C.k=k;C.cx=cx;C.glow=Math.min(1,Math.sqrt(Math.min(12,names.length)/5));
     x.strokeStyle='#1b1712';x.lineWidth=3*k;x.beginPath();x.moveTo(rx0-28*k,ry);x.lineTo(rx0+5*sp+28*k,ry);x.moveTo(rx0-28*k,ry+34*k);x.lineTo(rx0+5*sp+28*k,ry+34*k);
     x.moveTo(rx0-22*k,ry);x.lineTo(rx0-30*k,ry+80*k);x.moveTo(rx0+5*sp+22*k,ry);x.lineTo(rx0+5*sp+30*k,ry+80*k);x.stroke();
     var lit=Math.min(12,names.length),order=[0,4,8,2,10,6,1,9,3,11,5,7],on={};for(var q=0;q<lit;q++)on[order[q]]=1;
@@ -2407,7 +2407,7 @@ var Rooms=(function(){
   $('nomenCancel').onclick=function(){$('accendeForm').hidden=true;};
 
   /* =================== moving between rooms =================== */
-  function panelTop(){var t=H-170;try{var p=$('panel').getBoundingClientRect();if(p.top>H*0.4)t=p.top;}catch(e){}if(!document.body.classList.contains('playing'))t=Math.max(t,H-130);return t;}
+  function panelTop(){return H-170;}   // the controls' height while playing; rooms keep this layout always
   function sizeCv(c){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR);c.style.width=W+'px';c.style.height=H+'px';}
   function place(){
     W=innerWidth;H=innerHeight;DPR=Math.min(2,window.devicePixelRatio||1);
@@ -2434,42 +2434,36 @@ var Rooms=(function(){
     if(to==='organum'){sizeCv(lcv);buildLoft();}if(to==='crypta'){sizeCv(ccv);buildCrypt();}
     var t=performance.now()/1000,g=V.glow(),s=clamp(g.L,0,1);
     if(to==='organum')drawLoft(lx,t,s,g.bloom||0);if(to==='crypta')drawCrypt(cx2,t,s,g.bloom||0);
-    // freeze both pictures for the journey, at screen resolution: the blur hides the rest
-    var A=mk(W,H),B=mk(W,H);A.getContext('2d').drawImage(cvOf(from),0,0,W,H);B.getContext('2d').drawImage(cvOf(to),0,0,W,H);
-    tcv.width=W;tcv.height=H;tcv.style.width=W+'px';tcv.style.height=H+'px';tcv.hidden=false;
+    // freeze both pictures at full resolution; the browser's compositor slides and fades them
+    var fromCv=cvOf(from),toCv=cvOf(to);
+    function snap(src,el){el.width=src.width;el.height=src.height;el.getContext('2d').drawImage(src,0,0);el.style.width=W+'px';el.style.height=H+'px';}
+    snap(fromCv,tA);snap(toCv,tB);
+    var dirn=n>i?1:-1,D=H+Math.round(H*0.22);
+    [tA,tB].forEach(function(el){el.style.transition='none';});
+    tA.style.transform='translate3d(0,0,0)';tA.style.opacity=1;
+    tB.style.transform='translate3d(0,'+(dirn*D)+'px,0)';tB.style.opacity=0;
+    tbox.hidden=false;void tbox.offsetHeight;
     room=to;show(to);V.pause(true);
     if(to==='organum'&&!(opts&&opts.length))try{loftWants();}catch(e){}
-    try{organ.room(to,1.2);}catch(e){}
-    trans={A:A,B:B,TA:mk(W,H),TB:mk(W,H),dir:n>i?1:-1,t0:performance.now(),dur:1600,gap:Math.round(H*0.22),from:from};
+    try{organ.room(to,1.4);}catch(e){}
+    var EASE='cubic-bezier(.45,0,.2,1)';
+    tA.style.transition='transform 1.6s '+EASE+', opacity 1s ease-in';
+    tB.style.transition='transform 1.6s '+EASE+', opacity 1s ease-out .6s';
+    tA.style.transform='translate3d(0,'+(-dirn*D)+'px,0)';tA.style.opacity=0;
+    tB.style.transform='translate3d(0,0,0)';tB.style.opacity=1;
+    trans={from:from};
+    setTimeout(function(){
+      trans=null;if(room==='navis')V.pause(false);
+      lastDraw=0;requestAnimationFrame(function(){tbox.hidden=true;tA.width=tA.height=tB.width=tB.height=1;});
+      if(from!=='navis'&&from!==room)release(from);
+    },1650);
   }
   function goTo(name){var d=ORDER.indexOf(name)-ORDER.indexOf(room);if(!d)return;go(d>0?1:-1);if(Math.abs(d)>1)setTimeout(function(){go(d>0?1:-1);},1300);}
-  function sstep(a,b,x){x=clamp((x-a)/(b-a),0,1);return x*x*(3-2*x);}
-  function drawTrans(now){
-    var T=trans,p=clamp((now-T.t0)/T.dur,0,1),mv=function(q){return 0.5-0.5*Math.cos(Math.PI*q);},e=mv(p),D=H+T.gap,tc=tcv.getContext('2d');
-    var v=Math.abs(mv(Math.min(1,p+0.02))-mv(Math.max(0,p-0.02)))/0.04/1.5708;   // speed, 0 at rest, 1 at full flight
-    var n=1+Math.round(v*4),spread=v*H*0.045;
-    // each picture smeared along the direction of travel (motion blur), then faded as it leaves or arrives
-    function smear(src,dst){var d=dst.getContext('2d');d.globalCompositeOperation='copy';d.globalAlpha=1;d.drawImage(src,0,n>1?-spread/2:0,W,H);d.globalCompositeOperation='source-over';
-      for(var j=1;j<n;j++){d.globalAlpha=1/(j+1);d.drawImage(src,0,(j/(n-1)-0.5)*spread,W,H);}}
-    var aA=1-sstep(0.0,0.62,p),aB=sstep(0.38,1.0,p);
-    tc.setTransform(1,0,0,1,0,0);tc.globalCompositeOperation='source-over';tc.globalAlpha=1;tc.fillStyle='#000';tc.fillRect(0,0,W,H);
-    var yA=-T.dir*e*D,yB=T.dir*(D-e*D);
-    if(aA>0.01&&Math.abs(yA)<H){smear(T.A,T.TA);tc.globalAlpha=aA;tc.drawImage(T.TA,0,yA,W,H);}
-    if(aB>0.01&&Math.abs(yB)<H){smear(T.B,T.TB);tc.globalAlpha=aB;tc.drawImage(T.TB,0,yB,W,H);}
-    tc.globalAlpha=1;
-    if(p>=1){
-      var from=T.from;trans=null;
-      if(room==='navis')V.pause(false);
-      tcv.hidden=true;tcv.width=tcv.height=1;
-      if(from!=='navis'&&from!==room)release(from);
-    }
-  }
-
   // one frame loop for the rooms; idle in the nave
   var lx=lcv.getContext('2d'),cx2=ccv.getContext('2d');
   function frame(now){
     requestAnimationFrame(frame);
-    if(trans){drawTrans(now);return;}
+    if(trans)return;
     if(room==='navis')return;
     if(now-lastDraw<31)return;   // thirty frames a second is plenty for candlelight
     lastDraw=now;
