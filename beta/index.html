@@ -38,6 +38,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .room>canvas{position:absolute;left:0;top:0;display:block}
 body.room-organum #nave,body.room-crypta #nave{visibility:hidden}
 #transCv{position:fixed;left:0;top:0;display:block}
+@keyframes roomIn{from{opacity:0}to{opacity:1}}
+.room .roomhead,.room .roomnav,#memento,#loftHits{animation:roomIn 1.4s ease 1.2s both}
 .roomhead{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 18px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;text-align:center}
 .roomhead .sc{color:#B7AE9F;font-size:13px;letter-spacing:.22em;line-height:20px}
 .roomhead .rv{font-family:'Pfeffer',Fondamento,serif;font-size:19px;color:#C9A25A;padding:0 20px}
@@ -1372,15 +1374,15 @@ function step(){
   }
   sound(c,c.isHome?D*1.15:D);
   later(step,c.isHome?D*1.15:D);
-  nextAt=Date.now()+(c.isHome?D*1.15:D)*1000;
-  var dd=c.isHome?D*1.15:D;setTimeout(function(){if(curChord===c)offerNext(dd-0.05);},30);
+  chordAt=performance.now();nextAt=chordAt+(c.isHome?D*1.15:D)*1000;
+  setTimeout(function(){if(curChord===c)offerNext();},30);
 }
-var loftOpts=null,nextAt=0;
-function offerNext(dur){
+var loftOpts=null,nextAt=0,chordAt=0;
+function offerNext(){
   if(!playing||Rooms.room()!=='organum'||!curChord||curChord.final){loftOpts=null;Rooms.clear();return;}
-  var o=orgel.peek(24);o.wantEnd=orgel.wantEnd;loftOpts=o;Rooms.offer(o,dur);
+  var o=orgel.peek(24);o.wantEnd=orgel.wantEnd;loftOpts=o;Rooms.offer(o,chordAt,nextAt);
 }
-function loftWants(){if(playing&&!loftOpts&&curChord&&!curChord.final)offerNext(Math.max(1.5,(nextAt-Date.now())/1000));}
+function loftWants(){if(playing&&!loftOpts&&curChord&&!curChord.final)offerNext();}
 
 function unlockIOS(){
   try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
@@ -2189,7 +2191,7 @@ var Rooms=(function(){
     return [c0,m];
   }
 
-  var opts=null,picked=-1,lapStart=0,lapDur=1;
+  var opts=null,picked=-1,lapStart=0,lapEnd=1,shownAt=0;
   function word(c){
     if(c.final)return 'finis';if(c.amen)return 'amen';if(c.isHome)return 'reditus';
     if(Orgel.DIMS[c.kind])return 'umbra';if(c.kind==='dom')return c.tritone?'tritonus':'tensio';
@@ -2254,7 +2256,7 @@ var Rooms=(function(){
   }
   function drawCards(x,t){
     if(!opts||!L.plate)return;
-    var now=performance.now(),p=clamp((now-lapStart)/(lapDur*1000),0,1),u=ease(p),cw=L.cw,ch=L.ch,fade=clamp((now-lapStart)/900,0,1);
+    var now=performance.now(),p=clamp((now-lapStart)/(lapEnd-lapStart),0,1),u=p,cw=L.cw,ch=L.ch,fade=clamp((now-shownAt)/900,0,1);
     opts.forEach(function(o,i){
       var X=cardX(i),Y=L.cardsTop,sel=picked===i,oth=picked>=0&&!sel,lift=sel?-4:0;
       x.save();x.translate(X,Y+lift);x.globalAlpha=fade*(oth?0.45:1);
@@ -2313,17 +2315,16 @@ var Rooms=(function(){
     torches.forEach(function(t){var tx=t[0],ty=t[1],f=t[2];x.fillStyle='#120e0a';x.beginPath();x.moveTo(tx-5*f,ty+6*f);x.lineTo(tx+5*f,ty+6*f);x.lineTo(tx+2.4*f,ty+16*f);x.lineTo(tx-2.4*f,ty+16*f);x.closePath();x.fill();
       x.fillRect(tx-0.5*f,ty+16*f,f,10*f);x.fillStyle='#2a1a0e';x.fillRect(tx-1.6*f,ty-4*f,3.2*f,12*f);});
     C.torches=torches;
-    // the votive stand: five burn for all the faithful departed, one more for each name
-    var ry=Math.min(H*0.732,pt-70*k),sp=43*k,rx0=cx-sp*2.5;C.ry=ry;C.k=k;C.cx=cx;
+    // the votive stand: one candle for each name, no more, no fewer
+    var ry=Math.min(H*0.732,pt-70*k),sp=43*k,rx0=cx-sp*2.5;C.ry=ry;C.k=k;C.cx=cx;C.glow=Math.min(1,Math.sqrt(Math.min(12,names.length)/5));
     x.strokeStyle='#1b1712';x.lineWidth=3*k;x.beginPath();x.moveTo(rx0-28*k,ry);x.lineTo(rx0+5*sp+28*k,ry);x.moveTo(rx0-28*k,ry+34*k);x.lineTo(rx0+5*sp+28*k,ry+34*k);
     x.moveTo(rx0-22*k,ry);x.lineTo(rx0-30*k,ry+80*k);x.moveTo(rx0+5*sp+22*k,ry);x.lineTo(rx0+5*sp+30*k,ry+80*k);x.stroke();
-    var lit=Math.min(12,5+names.length),order=[0,4,8,2,10,6,1,9,3,11,5,7],on={};for(var q=0;q<lit;q++)on[order[q]]=1;
+    var lit=Math.min(12,names.length),order=[0,4,8,2,10,6,1,9,3,11,5,7],on={};for(var q=0;q<lit;q++)on[order[q]]=1;
     C.cups=[];
     for(var r2=0;r2<2;r2++)for(var ii=0;ii<6;ii++){var X=rx0+ii*sp,Y=ry-14*k+r2*34*k,idx=r2*6+ii;
       x.globalAlpha=on[idx]?.95:.5;x.fillStyle='#5a1410';x.beginPath();x.moveTo(X-9*k,Y);x.lineTo(X+9*k,Y);x.lineTo(X+7*k,Y+14*k);x.lineTo(X-7*k,Y+14*k);x.closePath();x.fill();
       x.strokeStyle='#200604';x.lineWidth=.8;x.stroke();x.globalAlpha=1;
       if(!on[idx])continue;
-      x.fillStyle='#a8281c';x.beginPath();x.moveTo(X-9.5*k,Y-0.5);x.quadraticCurveTo(X,Y-2.2*k,X+9.5*k,Y-0.5);x.lineTo(X+9.5*k,Y+k);x.lineTo(X-9.5*k,Y+k);x.closePath();x.fill();
       var drips=[];for(var d=0,nd=1+Math.floor(r()*3);d<nd;d++)drips.push({dx:(r()*15-7.5)*k,len:(4+r()*7)*k,w:(1.4+r())*k,per:30+r()*30,off:r()*60});
       C.cups.push({x:X,y:Y,ph:idx*0.37,drips:drips,fall:r()<0.5?{dx:(r()<.5?-1:1)*(5+r()*3)*k,per:35+r()*35,off:r()*70,to:ry+80*k}:null});
     }
@@ -2336,6 +2337,7 @@ var Rooms=(function(){
     C.fg=soften(fg,4);
     var ml=$('memento');ml.style.top='auto';ml.style.bottom=Math.round(H-(ry-26*k))+'px';
     renderNames();
+    $('accendeBtn').hidden=names.length>=12;
   }
   function skeleton(x,cx,vy,s,b){
     x.save();x.strokeStyle=b;x.fillStyle=b;x.lineWidth=1.1*s;x.lineCap='round';x.globalAlpha=.9;
@@ -2356,8 +2358,8 @@ var Rooms=(function(){
     x.drawImage(C.still,0,0,W,H);
     // the candles' light filling the near vault and pooling on the floor
     x.globalCompositeOperation='lighter';
-    x.globalAlpha=0.72*sw;var R=300*k*(1+0.1*b);x.drawImage(SP.warm,cx-R,ry+10*k-R*0.77,R*2,R*1.54);
-    x.globalAlpha=0.45*sw;x.drawImage(SP.warm,cx-210*k,ry+50*k,420*k,80*k);
+    x.globalAlpha=0.72*sw*C.glow;var R=300*k*(1+0.1*b);x.drawImage(SP.warm,cx-R,ry+10*k-R*0.77,R*2,R*1.54);
+    x.globalAlpha=0.45*sw*C.glow;x.drawImage(SP.warm,cx-210*k,ry+50*k,420*k,80*k);
     // the torches: barely there
     C.torches.forEach(function(tq,i){var fl=0.6+0.25*Math.sin(t*4.7+i*2)+0.1*Math.sin(t*11+i);x.globalAlpha=0.16*fl;var r2=70*tq[2]+24*k;x.drawImage(SP.warm,tq[0]-r2,tq[1]-10*tq[2]-r2,r2*2,r2*2);});
     // the darkness, gathered close around the candles
@@ -2373,14 +2375,16 @@ var Rooms=(function(){
       var fl=0.84+0.1*Math.sin(t*3.3+c.ph*5)+0.06*Math.sin(t*7.9+c.ph*3);
       x.globalCompositeOperation='lighter';x.globalAlpha=clamp(0.55*fl*sw+0.2,0,1);var r3=30*k;x.drawImage(SP.red,c.x-r3,c.y+4*k-r3,r3*2,r3*2);
       x.globalCompositeOperation='source-over';x.globalAlpha=1;x.fillStyle='#ffe6b8';x.beginPath();x.ellipse(c.x,c.y+2*k,1.6*k,3.6*k*fl,0,0,6.2832);x.fill();
-      // red wax creeping down the glass
-      x.fillStyle='#9c2218';c.drips.forEach(function(d){var ph=((t+d.off)%d.per)/d.per,g=Math.min(1,ph/0.7),l=0.05*d.len+0.95*d.len*(1-Math.pow(1-g,2));
+      // the wax, lit from within by its own flame: warm red, never dull
+      var wl=clamp(fl*(0.55+0.45*sw),0,1),wc='rgb('+Math.round(150+95*wl)+','+Math.round(34+52*wl)+','+Math.round(22+28*wl)+')';
+      x.fillStyle=wc;x.beginPath();x.moveTo(c.x-9.5*k,c.y-0.5);x.quadraticCurveTo(c.x,c.y-2.2*k,c.x+9.5*k,c.y-0.5);x.lineTo(c.x+9.5*k,c.y+k);x.lineTo(c.x-9.5*k,c.y+k);x.closePath();x.fill();
+      x.fillStyle=wc;c.drips.forEach(function(d){var ph=((t+d.off)%d.per)/d.per,g=Math.min(1,ph/0.7),l=0.05*d.len+0.95*d.len*(1-Math.pow(1-g,2));
         x.fillRect(c.x+d.dx-d.w/2,c.y-0.5,d.w,l);x.beginPath();x.arc(c.x+d.dx,c.y-0.5+l,d.w/2+0.3,0,Math.PI);x.fill();});
-      if(c.fall){var fp=((t+c.fall.off)%c.fall.per)/c.fall.per;if(fp>0.93&&fp<0.99){var q=(fp-0.93)/0.06,yy=c.y+14*k+(c.fall.to-c.y-14*k)*q*q;x.fillStyle='#a8281c';x.beginPath();x.ellipse(c.x+c.fall.dx,yy,k,1.6*k,0,0,6.2832);x.fill();}}
+      if(c.fall){var fp=((t+c.fall.off)%c.fall.per)/c.fall.per;if(fp>0.93&&fp<0.99){var q=(fp-0.93)/0.06,yy=c.y+14*k+(c.fall.to-c.y-14*k)*q*q;x.fillStyle=wc;x.beginPath();x.ellipse(c.x+c.fall.dx,yy,k,1.6*k,0,0,6.2832);x.fill();}}
     });
     // dust in the candlelight
     x.globalCompositeOperation='lighter';
-    C.motes.forEach(function(m){var ph=((t+m.o)%m.d)/m.d,a=ph<.15?ph/.15:ph>.85?(1-ph)/.15:1;x.globalAlpha=a*0.6*sw;var R2=m.s*3;x.drawImage(SP.dust,m.x+14*ph*k-R2,m.y+70*ph*k-R2,R2*2,R2*2);});
+    C.motes.forEach(function(m){var ph=((t+m.o)%m.d)/m.d,a=ph<.15?ph/.15:ph>.85?(1-ph)/.15:1;x.globalAlpha=a*0.6*sw*Math.max(0.15,C.glow);var R2=m.s*3;x.drawImage(SP.dust,m.x+14*ph*k-R2,m.y+70*ph*k-R2,R2*2,R2*2);});
     // the one at the altar: only half seen
     x.globalCompositeOperation='source-over';x.globalAlpha=0.2*sw;var sa=C.skelAt;x.drawImage(C.skel,sa[0],sa[1],sa[2],sa[3]);
     // the near columns, their inner faces warm
@@ -2399,7 +2403,7 @@ var Rooms=(function(){
   }
   $('accendeBtn').onclick=function(){$('accendeForm').hidden=false;$('nomenIn').value='';setTimeout(function(){$('nomenIn').focus();},50);};
   $('accendeForm').onsubmit=function(e){e.preventDefault();var v=($('nomenIn').value||'').trim().slice(0,40);
-    if(v){names.push(v);if(names.length>24)names.shift();saveNames();buildCrypt();}$('accendeForm').hidden=true;};
+    if(v&&names.length<12){names.push(v);saveNames();buildCrypt();}$('accendeForm').hidden=true;};
   $('nomenCancel').onclick=function(){$('accendeForm').hidden=true;};
 
   /* =================== moving between rooms =================== */
@@ -2436,18 +2440,23 @@ var Rooms=(function(){
     room=to;show(to);V.pause(true);
     if(to==='organum'&&!(opts&&opts.length))try{loftWants();}catch(e){}
     try{organ.room(to,1.2);}catch(e){}
-    trans={A:A,B:B,dir:n>i?1:-1,t0:performance.now(),dur:1150,gap:Math.round(H*0.28),from:from};
+    trans={A:A,B:B,TA:mk(W,H),TB:mk(W,H),dir:n>i?1:-1,t0:performance.now(),dur:1600,gap:Math.round(H*0.22),from:from};
   }
   function goTo(name){var d=ORDER.indexOf(name)-ORDER.indexOf(room);if(!d)return;go(d>0?1:-1);if(Math.abs(d)>1)setTimeout(function(){go(d>0?1:-1);},1300);}
+  function sstep(a,b,x){x=clamp((x-a)/(b-a),0,1);return x*x*(3-2*x);}
   function drawTrans(now){
-    var T=trans,p=clamp((now-T.t0)/T.dur,0,1),e=ease(p),D=H+T.gap,tc=tcv.getContext('2d');
-    var v=Math.abs(ease(Math.min(1,p+0.02))-ease(Math.max(0,p-0.02)))/0.04;   // speed: 0 at rest, ~1.5 at full flight
+    var T=trans,p=clamp((now-T.t0)/T.dur,0,1),mv=function(q){return 0.5-0.5*Math.cos(Math.PI*q);},e=mv(p),D=H+T.gap,tc=tcv.getContext('2d');
+    var v=Math.abs(mv(Math.min(1,p+0.02))-mv(Math.max(0,p-0.02)))/0.04/1.5708;   // speed, 0 at rest, 1 at full flight
+    var n=1+Math.round(v*4),spread=v*H*0.045;
+    // each picture smeared along the direction of travel (motion blur), then faded as it leaves or arrives
+    function smear(src,dst){var d=dst.getContext('2d');d.globalCompositeOperation='copy';d.globalAlpha=1;d.drawImage(src,0,n>1?-spread/2:0,W,H);d.globalCompositeOperation='source-over';
+      for(var j=1;j<n;j++){d.globalAlpha=1/(j+1);d.drawImage(src,0,(j/(n-1)-0.5)*spread,W,H);}}
+    var aA=1-sstep(0.0,0.62,p),aB=sstep(0.38,1.0,p);
     tc.setTransform(1,0,0,1,0,0);tc.globalCompositeOperation='source-over';tc.globalAlpha=1;tc.fillStyle='#000';tc.fillRect(0,0,W,H);
-    var yA=-T.dir*e*D,yB=T.dir*(D-e*D),n=1+Math.round(clamp(v,0,1.5)*4),spread=clamp(v,0,1.5)*H*0.035;
-    // motion blur: each picture laid down several times along the direction of travel, averaged
-    for(var j=0;j<n;j++){var o=n>1?(j/(n-1)-0.5)*spread:0;tc.globalAlpha=1/(j+1);
-      if(yA+o<H&&yA+o>-H)tc.drawImage(T.A,0,yA+o,W,H);if(yB+o<H&&yB+o>-H)tc.drawImage(T.B,0,yB+o,W,H);}
-    tc.globalAlpha=clamp(v*0.18,0,0.28);tc.fillStyle='#000';tc.fillRect(0,0,W,H);tc.globalAlpha=1;
+    var yA=-T.dir*e*D,yB=T.dir*(D-e*D);
+    if(aA>0.01&&Math.abs(yA)<H){smear(T.A,T.TA);tc.globalAlpha=aA;tc.drawImage(T.TA,0,yA,W,H);}
+    if(aB>0.01&&Math.abs(yB)<H){smear(T.B,T.TB);tc.globalAlpha=aB;tc.drawImage(T.TB,0,yB,W,H);}
+    tc.globalAlpha=1;
     if(p>=1){
       var from=T.from;trans=null;
       if(room==='navis')V.pause(false);
@@ -2482,9 +2491,10 @@ var Rooms=(function(){
   $('toNavisDown').onclick=function(){go(1);};$('toNavisUp').onclick=function(){go(-1);};
   var rz=0;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(place,200);});
 
+  window.__cathedraLap=function(){return opts?(performance.now()-lapStart)/(lapEnd-lapStart):null;};
   return {
     place:place,go:go,goTo:goTo,room:function(){return room;},
-    offer:function(list,dur){opts=list&&list.length?list:null;picked=-1;lapStart=performance.now();lapDur=Math.max(0.5,dur||1);faces();layoutHits();},
+    offer:function(list,start,end){opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now();faces();layoutHits();},
     clear:function(){opts=null;picked=-1;hits.innerHTML='';},
     picked:function(){return picked;},
     relayout:function(){if(room==='organum')buildLoft();if(room==='crypta')buildCrypt();}
