@@ -47,7 +47,7 @@ body.in-room #nave{visibility:hidden}
 .roomnav{all:unset;position:absolute;top:calc(env(safe-area-inset-top) + 6px);right:10px;min-width:56px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'Alegreya SC',serif;font-size:11px;letter-spacing:.18em;color:#8E877C;cursor:pointer}
 .roomnav:focus-visible,.ohit:focus-visible{outline:2px solid #D9B45A;border-radius:12px}
 .roomnav.low{top:auto;bottom:calc(env(safe-area-inset-bottom) + 2px)}
-.navehint{position:fixed;z-index:30;opacity:0;pointer-events:none;transition:opacity 1.6s ease}
+.navehint{position:fixed;opacity:0;pointer-events:none;transition:opacity 1.6s ease}
 body.entered:not(.in-room) .navehint{opacity:1;pointer-events:auto}
 body.calm .navehint{opacity:0!important;pointer-events:none}
 .roomnav.side{top:50%;bottom:auto;right:6px;transform:translateY(-50%)}
@@ -246,6 +246,10 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <h2>diapason</h2>
   <div class="chips" id="diapason"></div>
   <p class="note">The pitch of A. 415: baroque, darker. 466: Chorton, the high pitch of many German church organs in Bach's time.</p>
+
+  <h2>volumen</h2>
+  <div id="volSlider"></div>
+  <p class="note">Louder overall, without distortion. For speakers and home theaters that fall asleep when the music is soft.</p>
 
   <details class="fold"><summary><h2>ambitus</h2></summary>
   <div id="ambSliders"></div>
@@ -726,7 +730,11 @@ Organ.prototype.init = function () {
   // the room you listen from: open in the nave and loft; through stone in the crypt
   this.roomLP = ctx.createBiquadFilter(); this.roomLP.type = 'lowpass'; this.roomLP.frequency.value = 20000; this.roomLP.Q.value = 0.4;
   this.roomLo = ctx.createBiquadFilter(); this.roomLo.type = 'lowshelf'; this.roomLo.frequency.value = 150; this.roomLo.gain.value = 0;
-  this.master.connect(this.roomLP); this.roomLP.connect(this.roomLo); this.roomLo.connect(this.comp); this.comp.connect(ctx.destination);
+  this.master.connect(this.roomLP); this.roomLP.connect(this.roomLo); this.roomLo.connect(this.comp);
+  // volumen: make-up gain after the compressor, then a brick-wall limiter so a loud setting never distorts
+  this.vol = ctx.createGain(); this.vol.gain.value = this.volDb ? Math.pow(10, this.volDb / 20) : 1;
+  this.lim = ctx.createDynamicsCompressor(); this.lim.threshold.value = -2; this.lim.knee.value = 0; this.lim.ratio.value = 20; this.lim.attack.value = 0.002; this.lim.release.value = 0.25;
+  this.comp.connect(this.vol); this.vol.connect(this.lim); this.lim.connect(ctx.destination);
 
   this.bus = ctx.createGain();            // all pipes
   this.breath = ctx.createGain();         // the air
@@ -931,6 +939,10 @@ Organ.prototype.room = function (name, secs) {
   f.setValueAtTime(f0, t); g.setValueAtTime(g0, t);
   f.exponentialRampToValueAtTime(down ? 620 : 20000, t + T);
   g.linearRampToValueAtTime(down ? 5 : 0, t + T);
+};
+Organ.prototype.volume = function (db) {   // 0 .. +12 dB
+  this.volDb = db;
+  if (this.vol) this.vol.gain.setTargetAtTime(Math.pow(10, db / 20), this.ctx.currentTime, 0.1);
 };
 G.Organ = Organ;
 })(window);
@@ -1268,7 +1280,7 @@ G.Lectio = { readings: readings, pretty: pretty, R: R };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={ambitus:0.7,aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={volumen:0,ambitus:0.7,aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1446,7 +1458,7 @@ function unlockIOS(){
 }
 
 function start(){
-  organ.init();
+  organ.init();organ.volume(S.volumen||0);
   unlockIOS();
   if(organ.ctx.state!=='running')organ.ctx.resume();
   organ.apply();
@@ -1598,6 +1610,10 @@ function build(){
     row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
     $('ambSliders').appendChild(row);
   });
+  (function(){var row=document.createElement('label');row.className='slider';
+    row.innerHTML='<span><b>Volumen</b><small>from normal to four times louder</small></span><input type="range" min="0" max="12" step="0.5" value="'+(S.volumen||0)+'" aria-label="Volumen">';
+    row.querySelector('input').oninput=function(){S.volumen=+this.value;save();organ.volume(S.volumen);};
+    $('volSlider').appendChild(row);})();
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
   [[10,'x'],[20,'xx'],[30,'xxx'],[0,'sine fine']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.durata=+this.dataset.v;orgel.wantEnd=false;save();ui();};$('durata').appendChild(b);});
   $('caeliBtn').onclick=function(){S.caeli=!S.caeli;save();ui();V.relight();};
@@ -2817,7 +2833,7 @@ V.intro();
 $('gate').onclick=function(){
   if(document.body.classList.contains('entered'))return;
   document.body.classList.add('entered');
-  try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
+  try{organ.volume(S.volumen||0);organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
   V.enter();V.bell();
   $('gate').classList.add('gone');document.body.classList.remove('intro');
   setTimeout(function(){$('gate').hidden=true;},2400);
