@@ -37,10 +37,10 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .room.off{display:none}
 .room>canvas{position:absolute;left:0;top:0;display:block}
 body.room-organum #nave,body.room-crypta #nave{visibility:hidden}
-#transBox{position:fixed;inset:0;background:#000;overflow:hidden}
+.room,#nave{will-change:auto}
+#transBox{position:fixed;inset:0;background:#000;overflow:hidden;z-index:1}
 #transBox canvas{position:absolute;left:0;top:0;display:block;will-change:transform,opacity;backface-visibility:hidden}
 @keyframes roomIn{from{opacity:0}to{opacity:1}}
-.room .roomhead,.room .roomnav,#memento,#loftHits{animation:roomIn 1.4s ease 1.2s both}
 .roomhead{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 18px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;text-align:center}
 .roomhead .sc{color:#B7AE9F;font-size:13px;letter-spacing:.22em;line-height:20px}
 .roomhead .rv{font-family:'Pfeffer',Fondamento,serif;font-size:19px;color:#C9A25A;padding:0 20px}
@@ -147,7 +147,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <div id="memento"><span class="sc">memento</span><div id="mementoNames"></div><button id="accendeBtn" type="button">+ accende</button></div>
   <form id="accendeForm" hidden><label for="nomenIn" style="position:absolute;left:-9999px">nomen</label><input id="nomenIn" placeholder="pro quo oras" maxlength="40" autocomplete="off"><button type="submit">accende</button><button type="button" id="nomenCancel" aria-label="Cancel">×</button></form>
 </div>
-<div id="transBox" hidden aria-hidden="true"><canvas id="transA"></canvas><canvas id="transB"></canvas></div>
+<div id="transBox" hidden aria-hidden="true"><canvas id="transA"></canvas></div>
 </div>
 <button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
@@ -2099,7 +2099,7 @@ var PIPES={"svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"360\" heigh
    the flames, the dust, the wax and the glint. No live SVG, no CSS filters. */
 var Rooms=(function(){
   var ORDER=['organum','navis','crypta'],room='navis';
-  var loftEl=$('loftRoom'),cryptEl=$('cryptRoom'),lcv=$('loftCv'),ccv=$('cryptCv'),tbox=$('transBox'),tA=$('transA'),tB=$('transB'),hits=$('loftHits');
+  var loftEl=$('loftRoom'),cryptEl=$('cryptRoom'),lcv=$('loftCv'),ccv=$('cryptCv'),tbox=$('transBox'),tA=$('transA'),hits=$('loftHits');
   var W=0,H=0,DPR=1,trans=null,lastDraw=0;
   function mk(w,h){var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;}
   function rnd(seed){return function(){seed=(seed*16807)%2147483647;return seed/2147483647;};}
@@ -2434,27 +2434,29 @@ var Rooms=(function(){
     if(to==='organum'){sizeCv(lcv);buildLoft();}if(to==='crypta'){sizeCv(ccv);buildCrypt();}
     var t=performance.now()/1000,g=V.glow(),s=clamp(g.L,0,1);
     if(to==='organum')drawLoft(lx,t,s,g.bloom||0);if(to==='crypta')drawCrypt(cx2,t,s,g.bloom||0);
-    // freeze both pictures at full resolution; the browser's compositor slides and fades them
-    var fromCv=cvOf(from),toCv=cvOf(to);
-    function snap(src,el){el.width=src.width;el.height=src.height;el.getContext('2d').drawImage(src,0,0);el.style.width=W+'px';el.style.height=H+'px';}
-    snap(fromCv,tA);snap(toCv,tB);
-    var dirn=n>i?1:-1,D=H+Math.round(H*0.22);
-    [tA,tB].forEach(function(el){el.style.transition='none';});
-    tA.style.transform='translate3d(0,0,0)';tA.style.opacity=1;
-    tB.style.transform='translate3d(0,'+(dirn*D)+'px,0)';tB.style.opacity=0;
-    tbox.hidden=false;void tbox.offsetHeight;
-    room=to;show(to);V.pause(true);
+    // the room we leave is frozen into one sharp picture; the room we enter arrives alive,
+    // its text, flames and glint already moving. The compositor slides and fades both.
+    var fromCv=cvOf(from);
+    tA.width=fromCv.width;tA.height=fromCv.height;tA.getContext('2d').drawImage(fromCv,0,0);tA.style.width=W+'px';tA.style.height=H+'px';
+    var dirn=n>i?1:-1,D=H+Math.round(H*0.22),el=to==='navis'?$('nave'):(to==='organum'?loftEl:cryptEl);
+    tA.style.transition='none';tA.style.transform='translate3d(0,0,0)';tA.style.opacity=1;
+    tbox.hidden=false;
+    room=to;show(to);
+    el.style.transition='none';el.style.zIndex=2;el.style.transform='translate3d(0,'+(dirn*D)+'px,0)';el.style.opacity=0;
+    void el.offsetHeight;
+    V.pause(to!=='navis');lastDraw=0;
     if(to==='organum'&&!(opts&&opts.length))try{loftWants();}catch(e){}
     try{organ.room(to,1.4);}catch(e){}
     var EASE='cubic-bezier(.45,0,.2,1)';
     tA.style.transition='transform 1.6s '+EASE+', opacity 1s ease-in';
-    tB.style.transition='transform 1.6s '+EASE+', opacity 1s ease-out .6s';
+    el.style.transition='transform 1.6s '+EASE+', opacity 1s ease-out .6s';
     tA.style.transform='translate3d(0,'+(-dirn*D)+'px,0)';tA.style.opacity=0;
-    tB.style.transform='translate3d(0,0,0)';tB.style.opacity=1;
+    el.style.transform='translate3d(0,0,0)';el.style.opacity=1;
     trans={from:from};
     setTimeout(function(){
-      trans=null;if(room==='navis')V.pause(false);
-      lastDraw=0;requestAnimationFrame(function(){tbox.hidden=true;tA.width=tA.height=tB.width=tB.height=1;});
+      trans=null;
+      el.style.transition='';el.style.transform='';el.style.opacity='';el.style.zIndex='';
+      tbox.hidden=true;tA.width=tA.height=1;
       if(from!=='navis'&&from!==room)release(from);
     },1650);
   }
@@ -2463,7 +2465,6 @@ var Rooms=(function(){
   var lx=lcv.getContext('2d'),cx2=ccv.getContext('2d');
   function frame(now){
     requestAnimationFrame(frame);
-    if(trans)return;
     if(room==='navis')return;
     if(now-lastDraw<31)return;   // thirty frames a second is plenty for candlelight
     lastDraw=now;
