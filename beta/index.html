@@ -146,7 +146,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
 </div>
 <div id="cryptRoom" class="room off">
   <canvas id="cryptCv" aria-hidden="true"></canvas>
-  <div class="roomhead"><span class="sc">crypta</span><span class="rv">Requiem aeternam dona eis, Domine</span></div>
+  <div class="roomhead"><span class="sc">crypta</span></div>
   <button id="toNavisUp" class="roomnav" type="button" aria-label="Up to the nave">navis ↑</button>
   <div id="memento"><span class="sc">memento</span><div id="mementoNames"></div><button id="accendeBtn" type="button">+ accende</button></div>
   <form id="accendeForm" hidden><label for="nomenIn" style="position:absolute;left:-9999px">nomen</label><input id="nomenIn" placeholder="pro quo oras" maxlength="40" autocomplete="off"><button type="submit">accende</button><button type="button" id="nomenCancel" aria-label="Cancel">×</button></form>
@@ -2401,14 +2401,14 @@ var Rooms=(function(){
       x.globalAlpha=0.85*fl;x.fillStyle='#fff0c8';x.beginPath();x.ellipse(tq[0],tq[1]-7*tq[2],1.1*tq[2],2.8*tq[2],0,0,6.2832);x.fill();});
     C.cups.forEach(function(c){
       var fl=0.84+0.1*Math.sin(t*3.3+c.ph*5)+0.06*Math.sin(t*7.9+c.ph*3);
-      x.globalCompositeOperation='lighter';x.globalAlpha=clamp(0.55*fl*sw+0.2,0,1);var r3=30*k;x.drawImage(SP.red,c.x-r3,c.y+4*k-r3,r3*2,r3*2);
-      x.globalCompositeOperation='source-over';x.globalAlpha=1;x.fillStyle='#ffe6b8';x.beginPath();x.ellipse(c.x,c.y+2*k,1.6*k,3.6*k*fl,0,0,6.2832);x.fill();
-      // the wax, lit from within by its own flame: warm red, never dull
-      var wl=clamp(fl*(0.55+0.45*sw),0,1),wc='rgb('+Math.round(150+95*wl)+','+Math.round(34+52*wl)+','+Math.round(22+28*wl)+')';
-      x.fillStyle=wc;x.beginPath();x.moveTo(c.x-9.5*k,c.y-0.5);x.quadraticCurveTo(c.x,c.y-2.2*k,c.x+9.5*k,c.y-0.5);x.lineTo(c.x+9.5*k,c.y+k);x.lineTo(c.x-9.5*k,c.y+k);x.closePath();x.fill();
+      // the wax is the candle's own red: drawn in the glass's colour, then lit by the same flame
+      x.globalCompositeOperation='source-over';x.globalAlpha=1;var wc='#5a1410';
+      x.fillStyle='#64170f';x.beginPath();x.moveTo(c.x-9.5*k,c.y-0.5);x.quadraticCurveTo(c.x,c.y-2.2*k,c.x+9.5*k,c.y-0.5);x.lineTo(c.x+9.5*k,c.y+k);x.lineTo(c.x-9.5*k,c.y+k);x.closePath();x.fill();
       x.fillStyle=wc;c.drips.forEach(function(d){var ph=((t+d.off)%d.per)/d.per,g=Math.min(1,ph/0.7),l=0.05*d.len+0.95*d.len*(1-Math.pow(1-g,2));
         x.fillRect(c.x+d.dx-d.w/2,c.y-0.5,d.w,l);x.beginPath();x.arc(c.x+d.dx,c.y-0.5+l,d.w/2+0.3,0,Math.PI);x.fill();});
-      if(c.fall){var fp=((t+c.fall.off)%c.fall.per)/c.fall.per;if(fp>0.93&&fp<0.99){var q=(fp-0.93)/0.06,yy=c.y+14*k+(c.fall.to-c.y-14*k)*q*q;x.fillStyle=wc;x.beginPath();x.ellipse(c.x+c.fall.dx,yy,k,1.6*k,0,0,6.2832);x.fill();}}
+      if(c.fall){var fp=((t+c.fall.off)%c.fall.per)/c.fall.per;if(fp>0.93&&fp<0.99){var q=(fp-0.93)/0.06,yy=c.y+14*k+(c.fall.to-c.y-14*k)*q*q;x.beginPath();x.ellipse(c.x+c.fall.dx,yy,k,1.6*k,0,0,6.2832);x.fill();}}
+      x.globalCompositeOperation='lighter';x.globalAlpha=clamp(0.55*fl*sw+0.2,0,1);var r3=30*k;x.drawImage(SP.red,c.x-r3,c.y+4*k-r3,r3*2,r3*2);
+      x.globalCompositeOperation='source-over';x.globalAlpha=1;x.fillStyle='#ffe6b8';x.beginPath();x.ellipse(c.x,c.y+2*k,1.6*k,3.6*k*fl,0,0,6.2832);x.fill();
     });
     // dust in the candlelight
     x.globalCompositeOperation='lighter';
