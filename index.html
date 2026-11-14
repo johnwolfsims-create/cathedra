@@ -50,6 +50,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 /* Ordo sheet */
 #sheet{position:fixed;left:0;right:0;bottom:calc(0px - var(--gap,0px));max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(9,8,7,.95);border-top:1px solid rgba(217,180,90,.35);border-radius:22px 22px 0 0;padding:22px 22px calc(env(safe-area-inset-bottom) + 28px);transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #sheet.open{transform:none}
+@media (min-aspect-ratio:6/5){#sheet{max-width:560px;margin:0 auto}}
+body.calm,body.calm *{cursor:none!important}
+body.calm #panel,body.calm #season{opacity:0;pointer-events:none}
 #sheet h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:36px}
 #sheet .sub{margin:2px 0 0;font-family:'Pfeffer',Fondamento,serif;font-style:italic;color:var(--muted)}
 #sheet h2{margin:24px 0 10px;font-family:'Alegreya SC',serif;font-weight:500;font-size:13px;letter-spacing:.22em;color:var(--gold)}
@@ -1463,9 +1466,10 @@ function changed(harmony){
 var V=(function(){
   var cv=$('nave'),main=cv.getContext('2d'),W=0,H=0,DPR=1;
   var bricks,pillarL,pillarR,vign,geo={};
-  var glass=document.createElement('canvas'),gctx=glass.getContext('2d'),tex=document.createElement('canvas');
-  var halos=[];             // [{mask, tint, tctx, scale, pad, strength}]
-  var panes=[],pal=null,palRGB=[];
+    var halos=[];             // [{mask, tint, tctx, scale, pad, strength}]
+  var pal=null,palRGB=[];
+  function mkSet(seed){var c=document.createElement('canvas');return {seed:seed,panes:[],stars:[],glass:c,gctx:c.getContext('2d'),tex:document.createElement('canvas')};}
+  var C=mkSet(7),SD=mkSet(23),panes=C.panes,glass=C.glass,gctx=C.gctx,tex=C.tex;
   var introT=0,enterT=0,entered=true,La=0.2,shadeV=0,shadeT=0,relV=0,relT=0,lastF=0,lvAvg=0,bloomT=0,lastT=0,frame=0,L=0.2,lvlMax=0.02,awake=false,bloom=0,resolveT=-99;
   var pulseT=[-99,-99,-99,-99,-99];
   var light={x:150,y:430,s:220,tx:150,ty:430,ts:220};   // where the light falls on the glass (window units)
@@ -1480,8 +1484,8 @@ var V=(function(){
     var a=x-(l.x0+l.r),b=y-l.ys,c=x-(l.x1-l.r);return a*a+b*b<=l.r*l.r&&c*c+b*b<=l.r*l.r;}
   var OUT=lancet(14,286,700,300),LL=lancet(40,138,682,360),RR=lancet(162,260,682,360),ROSE={x:150,y:205,r:48};
 
-  function buildPanes(){
-    panes=[];var seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+  function buildPanes(set){
+    var panes=set.panes;panes.length=0;var seed=set.seed;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
     [LL,RR].forEach(function(l){
       var y=l.apex-2;
       while(y<l.yb){var ph=[18,22,26][Math.floor(rnd()*3)],x=l.x0;
@@ -1496,11 +1500,12 @@ var V=(function(){
     for(var i=0;i<8;i++){var a=i*Math.PI/4;panes.push({t:'c',x:ROSE.x+Math.cos(a)*28,y:ROSE.y+Math.sin(a)*28,cx:ROSE.x+Math.cos(a)*28,cy:ROSE.y+Math.sin(a)*28,r:15,v:3,ph:rnd()*6.28,sp:.15+rnd()*.3,pick:(i%2?0.2:0.7)+rnd()*0.1,c:[0,0,0],b:0.2});}
     panes.push({t:'c',x:ROSE.x,y:ROSE.y,cx:ROSE.x,cy:ROSE.y,r:13,v:3,ph:0,sp:.2,pick:.995,c:[0,0,0],b:0.2,hub:1});
   }
+  function wins(){var a=[{set:C,x:geo.ox,y:geo.oy,w:geo.w,h:geo.h,s:geo.s}];if(geo.side){var d=geo.side;a.push({set:SD,x:d.lx,y:d.oy,w:d.w,h:d.h,s:d.s,mirror:true},{set:SD,x:d.rx,y:d.oy,w:d.w,h:d.h,s:d.s});}return a;}
   // glass keeps its colour, as real glass does; the light behind it is what changes
   function setPalette(p){
     if(p===pal)return;pal=p;palRGB=p.map(hex);
     var byLum=palRGB.slice().sort(function(a,b){return (a[0]*.3+a[1]*.6+a[2]*.1)-(b[0]*.3+b[1]*.6+b[2]*.1);});
-    panes.forEach(function(q){
+    C.panes.concat(SD.panes).forEach(function(q){
       var i=Math.min(byLum.length-1,Math.floor(q.pick*byLum.length));
       if(q.hub)i=byLum.length-1;
       q.c=byLum[i].slice();
@@ -1520,11 +1525,12 @@ var V=(function(){
     }
   }
   function makeHalo(scale,padCss,blurCss,strength){
-    var cw=geo.w+2*padCss,ch=geo.h+2*padCss;
+    var cw=(geo.bx1-geo.bx0)+2*padCss,ch=geo.h+2*padCss;
     var w=Math.max(4,Math.round(cw*scale)),h=Math.max(4,Math.round(ch*scale));
     var m=document.createElement('canvas');m.width=w;m.height=h;var x=m.getContext('2d');
-    x.setTransform(scale*geo.s,0,0,scale*geo.s,padCss*scale,padCss*scale);
-    x.fillStyle='#fff';lancetPath(x,LL);x.fill();lancetPath(x,RR);x.fill();x.beginPath();x.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);x.fill();
+    x.fillStyle='#fff';
+    wins().forEach(function(wn){var k=scale*wn.s;x.setTransform(k,0,0,k,(wn.x-geo.bx0+padCss)*scale,(wn.y-geo.oy+padCss)*scale);
+      lancetPath(x,LL);x.fill();lancetPath(x,RR);x.fill();x.beginPath();x.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);x.fill();});
     var img=x.getImageData(0,0,w,h),d=img.data,a=new Float32Array(w*h);
     for(var i=0;i<w*h;i++)a[i]=d[i*4+3]/255;
     boxBlur(a,w,h,Math.max(1,Math.round(blurCss*scale/1.7)));
@@ -1536,11 +1542,11 @@ var V=(function(){
   }
 
   // hand-made glass: each pane slightly pillowed, mottled and streaked
-  function makeTexture(){
-    tex.width=glass.width;tex.height=glass.height;var x=tex.getContext('2d'),k=DPR*geo.s;
+  function makeTexture(set,sc){
+    var tex=set.tex,panes=set.panes;tex.width=set.glass.width;tex.height=set.glass.height;var x=tex.getContext('2d'),k=DPR*sc;
     x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,tex.width,tex.height);
     x.setTransform(k,0,0,k,0,0);
-    var seed=11;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    var seed=set.seed+4;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
     panes.forEach(function(p){
       var cx=p.cx+(r()-.5)*6,cy=p.cy+(r()-.5)*6,rad=p.t==='c'?p.r:Math.max(p.w,p.h)*0.75;
       var g=x.createRadialGradient(cx,cy,rad*0.1,p.cx,p.cy,rad*1.05);
@@ -1659,14 +1665,14 @@ var V=(function(){
     if(night>0&&low===0&&e>=0){}
     skyS={tint:tint,amt:amt,bright:bright,night:night};
   }
-  function makeStars(){
-    stars=[];for(var i=0;i<46;i++){var l=Math.random()<.5?LL:RR,x=l.x0+Math.random()*(l.x1-l.x0),y=l.apex+Math.random()*(l.yb-l.apex);if(inside(l,x,y))stars.push({x:x,y:y,r:.6+Math.random()*1.4,ph:Math.random()*6.3,sp:.3+Math.random()*1.2});}
+  function makeStars(set){
+    var stars=set.stars;stars.length=0;for(var i=0;i<46;i++){var l=Math.random()<.5?LL:RR,x=l.x0+Math.random()*(l.x1-l.x0),y=l.apex+Math.random()*(l.yb-l.apex);if(inside(l,x,y))stars.push({x:x,y:y,r:.6+Math.random()*1.4,ph:Math.random()*6.3,sp:.3+Math.random()*1.2});}
     for(i=0;i<6;i++){var a=Math.random()*6.28,rr=Math.random()*40;stars.push({x:ROSE.x+Math.cos(a)*rr,y:ROSE.y+Math.sin(a)*rr,r:.6+Math.random(),ph:Math.random()*6.3,sp:.5+Math.random()});}
   }
   // candles: two bronze candelabra standing on the floor by the pillars, lit at night
   var stands=[];
   function makeCandles(){
-    stands=[];var pw=Math.max(40,Math.round(W*0.13)),floor=H-4,sill=geo.oy+geo.h,hgt=floor-(sill-8);
+    stands=[];var pw=pillarL?pillarL.w:Math.max(40,Math.round(W*0.13)),floor=H-4,sill=geo.oy+geo.h,hgt=floor-(sill-8);
     [[pw+30,[46,64,34]],[W-pw-30,[38,56,70]]].forEach(function(s){
       var cx=s[0],top=floor-hgt,spread=22;
       var cups=[{x:cx-spread,y:top+12},{x:cx,y:top},{x:cx+spread,y:top+8}];
@@ -1769,12 +1775,13 @@ var V=(function(){
   }
   function makeBricks(){
     var c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;var x=c.getContext('2d');x.scale(DPR,DPR);
-    x.fillStyle='#060505';x.fillRect(0,0,W,H);var bh=22,bw=58,seed=3;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    x.fillStyle='#060505';x.fillRect(0,0,W,H);var bk=geo.wide?Math.max(1,geo.s/0.62):1,bh=22*bk,bw=58*bk,seed=3;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
     for(var row=0;row*bh<H+bh;row++){var off=row%2?-bw/2:0;for(var bx=off;bx<W;bx+=bw){var g=22+Math.floor(r()*13);x.fillStyle='rgb('+g+','+(g-3)+','+(g-6)+')';x.fillRect(bx+1,row*bh+1,bw-2,bh-2);}}
     return c;
   }
   function makePillar(side){
-    var w=Math.max(40,Math.round(W*0.13)),c=document.createElement('canvas');c.width=w*DPR;c.height=H*DPR;var x=c.getContext('2d');x.scale(DPR,DPR);
+    var w=Math.max(40,Math.round(W*0.13));if(geo.wide)w=Math.round(Math.max(W*0.1,Math.min(W*0.19,geo.bx0*0.62)));
+    var c=document.createElement('canvas');c.width=w*DPR;c.height=H*DPR;var x=c.getContext('2d');x.scale(DPR,DPR);
     var g=x.createLinearGradient(side==='l'?0:w,0,side==='l'?w:0,0);
     [[0,'#020202'],[.18,'#13110e'],[.34,'#27231f'],[.44,'#38332e'],[.56,'#181512'],[.62,'#0a0908'],[.7,'#1c1916'],[.79,'#2f2b26'],[.9,'#13110e'],[1,'#020202']].forEach(function(s){g.addColorStop(s[0],s[1]);});
     x.fillStyle=g;x.fillRect(0,0,w,H);
@@ -1796,13 +1803,13 @@ var V=(function(){
   }
   function newMote(anywhere){
     var top=geo.oy-geo.h*0.3,bot=Math.min(H,geo.oy+geo.h+90);
-    return {x:W/2+(Math.random()-.5)*geo.w*3,y:anywhere?top+Math.random()*(bot-top):top-Math.random()*30,bot:bot,
+    return {x:W/2+(Math.random()-.5)*(geo.span+geo.w*2),y:anywhere?top+Math.random()*(bot-top):top-Math.random()*30,bot:bot,
       vy:3+Math.random()*9,sw:6+Math.random()*16,sf:.05+Math.random()*.18,ph:Math.random()*6.28,
       z:Math.random(),tw:Math.random()*6.28,tws:.4+Math.random()*1.4};
   }
   function lightAt(x,y){
     // light radiating from the window in every direction, fading with distance
-    var cx=W/2,cy=geo.oy+geo.h*0.5,dx=(x-cx)/(geo.w*1.6),dy=(y-cy)/(geo.h*0.95);
+    var cx=W/2,cy=geo.oy+geo.h*0.5,dx=(x-cx)/(geo.span*0.5+geo.w*1.1),dy=(y-cy)/(geo.h*0.95);
     var d=Math.sqrt(dx*dx+dy*dy),aura=d<1?Math.pow(1-d,1.4):0;
     var gy=geo.oy+geo.h*0.42,fy=beam?beam.floorY:H;if(y<gy||y>fy)return aura;
     var k=(y-gy)/(fy-gy),half=geo.w*0.37*(1+0.55*k),bd=Math.abs(x-W/2)/half;
@@ -1821,9 +1828,15 @@ var V=(function(){
       if(ti&&ti.hidden){pt-=76;}}catch(e){}
     if(!pt||pt<H*0.45)pt=H-250;
     var bottomLimit=pt-34;
-    for(var it=0;it<3;it++){top=verseTop+30+42*s;s=Math.max(0.2,Math.min((bottomLimit-top)/700,(W*0.5)/300));}
-    geo={s:s,ox:W/2-150*s,oy:top,w:300*s,h:700*s};
-    glass.width=Math.round(geo.w*DPR);glass.height=Math.round(geo.h*DPR);makeTexture();
+    // a wide screen (TV, desktop, landscape tablet) gets a triptych: two shorter lancets flank the great window
+    var wide=W>H*1.2,FS=0.84,GAP=34,span=wide?300*(1+2*FS)+2*GAP:300;
+    for(var it=0;it<3;it++){top=verseTop+30+42*s;s=Math.max(0.2,Math.min((bottomLimit-top)/700,(W*(wide?0.8:0.5))/span));}
+    geo={s:s,ox:W/2-150*s,oy:top,w:300*s,h:700*s,wide:wide,side:null};
+    geo.bx0=geo.ox;geo.bx1=geo.ox+geo.w;
+    if(wide){var ss=s*FS,sw=300*ss,sh=700*ss;geo.side={s:ss,w:sw,h:sh,oy:top+geo.h-sh,lx:geo.ox-GAP*s-sw,rx:geo.ox+geo.w+GAP*s};geo.bx0=geo.side.lx;geo.bx1=geo.side.rx+sw;}
+    geo.span=geo.bx1-geo.bx0;
+    C.glass.width=Math.round(geo.w*DPR);C.glass.height=Math.round(geo.h*DPR);makeTexture(C,s);
+    if(wide){SD.glass.width=Math.round(geo.side.w*DPR);SD.glass.height=Math.round(geo.side.h*DPR);makeTexture(SD,geo.side.s);}
     bricks=makeBricks();pillarL=makePillar('l');pillarR=makePillar('r');vign=makeVignette();makeMotes();
     halos=[makeHalo(0.5,50,18,1.0),makeHalo(0.25,190,70,1.0),makeHalo(0.125,460,190,0.95)];makeBeam();makeCandles();
   }
@@ -1865,9 +1878,9 @@ var V=(function(){
     var rs=t-resolveT,rp=rs<0?0:(1-Math.exp(-rs/1.6))*Math.exp(-rs/6);
 
     // glass
-    var g=gctx;g.setTransform(DPR*s,0,0,DPR*s,0,0);g.clearRect(0,0,300,700);
-    lancetPath(g,OUT);g.fillStyle='#0b0a08';g.fill();
     var acc=[0,0,0],wsum=0;
+    function paint(set,s){var g=set.gctx,panes=set.panes,stars=set.stars,tex=set.tex;g.setTransform(DPR*s,0,0,DPR*s,0,0);g.clearRect(0,0,300,700);
+    lancetPath(g,OUT);g.fillStyle='#0b0a08';g.fill();
     function shade(p){
       var dx=p.cx-light.x,dy=p.cy-light.y,f=Math.exp(-(dx*dx+dy*dy)/(2*light.s*light.s));
       var b=0.16+L*(0.45+1.0*f)+0.14*pv[p.v]+(p.v===0?0.1*pv[4]:0)+(p.v===3?0.16*rp:0)+0.05*Math.sin(p.ph+t*p.sp)+0.025*wind*L+0.3*bloom*L;
@@ -1895,6 +1908,9 @@ var V=(function(){
     g.beginPath();g.arc(ROSE.x,ROSE.y,5,0,6.2832);g.fillStyle='#7a746c';g.fill();
     g.lineWidth=10;g.strokeStyle='#7a746c';lancetPath(g,OUT);g.stroke();
     g.lineWidth=3;g.strokeStyle='#26221e';g.beginPath();g.moveTo(89,430);g.lineTo(89,682);g.moveTo(211,430);g.lineTo(211,682);g.stroke();
+    }
+    paint(C,geo.s);if(geo.side)paint(SD,geo.side.s);
+    var W3=wins();function glassAll(){W3.forEach(function(wn){if(wn.mirror){x.save();x.translate(wn.x+wn.w,wn.y);x.scale(-1,1);x.drawImage(wn.set.glass,0,0,wn.w,wn.h);x.restore();}else x.drawImage(wn.set.glass,wn.x,wn.y,wn.w,wn.h);});}
 
     // the colour of the light leaving the window: the glass it actually shines through
     var lc=[acc[0]/wsum,acc[1]/wsum,acc[2]/wsum],mx=Math.max(lc[0],lc[1],lc[2],1);
@@ -1915,14 +1931,14 @@ var V=(function(){
       if(frame%3===0||!hh.done){hh.done=1;tc.globalCompositeOperation='copy';tc.drawImage(hh.mask,0,0);
       tc.globalCompositeOperation='source-in';tc.fillStyle='rgb('+rgb+')';tc.fillRect(0,0,hh.tint.width,hh.tint.height);}
       x.globalAlpha=Math.min(1,halo*hh.strength*(0.14+0.95*L)*(1+0.35*bloom));
-      x.drawImage(hh.tint,geo.ox-hh.pad,geo.oy-hh.pad,hh.cw,hh.ch);
+      x.drawImage(hh.tint,geo.bx0-hh.pad,geo.oy-hh.pad,hh.cw,hh.ch);
     }
     // the beam to the floor, same light, gentler
     if(beam){var bt=beam.tctx;if(frame%3===0||!beam.done){beam.done=1;bt.globalCompositeOperation='copy';bt.drawImage(beam.mask,0,0);bt.globalCompositeOperation='source-in';bt.fillStyle='rgb('+rgb+')';bt.fillRect(0,0,beam.tint.width,beam.tint.height);}
       x.globalAlpha=Math.min(1,halo*(1-0.6*skyS.night)*(0.06+0.5*L)*(1+0.3*bloom));x.drawImage(beam.tint,0,0,W,H);x.globalAlpha=1;}
     // the glass itself
     x.globalCompositeOperation='source-over';
-    x.drawImage(glass,geo.ox,geo.oy,geo.w,geo.h);
+    glassAll();
     // pillars catch the light on their inner faces
     x.drawImage(pillarL,0,0,pillarL.w,H);x.drawImage(pillarR,W-pillarR.w,0,pillarR.w,H);
     x.globalCompositeOperation='lighter';
@@ -1934,13 +1950,18 @@ var V=(function(){
     // the tide: darkness pressing in from the edges, pushed back by every swell
     x.globalCompositeOperation='source-over';
     var cx=W/2,cy=geo.oy+geo.h*0.5,reach=(geo.w*(0.55+1.05*L+0.35*bloom)+6*wind)*(1-0.35*skyS.night)*(1-0.7*endDark)+4;
-    x.save();x.translate(cx,cy);x.scale(1,1.35);
-    var dk=x.createRadialGradient(0,0,reach*0.35,0,0,reach+Math.max(W,H)*0.42);
+    x.save();x.translate(cx,cy);x.scale(geo.wide?Math.max(1,geo.span/geo.w*0.5):1,1.35);
+    var dk=x.createRadialGradient(0,0,reach*0.35,0,0,reach+(geo.wide?geo.span*0.45:Math.max(W,H)*0.42));
     dk.addColorStop(0,'rgba(2,2,2,0)');dk.addColorStop(.38,'rgba(2,2,2,.45)');dk.addColorStop(.7,'rgba(2,2,2,.9)');dk.addColorStop(1,'rgba(1,1,1,.99)');
     x.fillStyle=dk;x.fillRect(-W,-H,W*2,H*2);x.restore();
     x.drawImage(vign,0,0,W,H);
     // re-light the glass itself so the dark never dims the window
-    x.globalAlpha=Math.min(1,(0.35+0.5*L)*(1-endDark));x.drawImage(glass,geo.ox,geo.oy,geo.w,geo.h);x.globalAlpha=1;
+    x.globalAlpha=Math.min(1,(0.35+0.5*L)*(1-endDark));glassAll();x.globalAlpha=1;
+    // on a wide screen the swells reach the far pillars: their inner faces keep a faint glow through the dark
+    if(geo.wide){x.globalCompositeOperation='lighter';var pa=((0.015+0.11*L+0.04*bloom)*(1-0.4*skyS.night)*(1-0.9*endDark)).toFixed(3);
+      var q1=x.createLinearGradient(pw*0.5,0,pw,0);q1.addColorStop(0,'rgba('+rgb+',0)');q1.addColorStop(.8,'rgba('+rgb+','+pa+')');q1.addColorStop(1,'rgba('+rgb+',0)');x.fillStyle=q1;x.fillRect(0,0,pw,H);
+      var q2=x.createLinearGradient(W-pw*0.5,0,W-pw,0);q2.addColorStop(0,'rgba('+rgb+',0)');q2.addColorStop(.8,'rgba('+rgb+','+pa+')');q2.addColorStop(1,'rgba('+rgb+',0)');x.fillStyle=q2;x.fillRect(W-pw,0,pw,H);
+      x.globalCompositeOperation='source-over';}
     drawCandles(x,t,candleA*(1-0.85*endDark),'light');
     // dust catching the light
     x.globalCompositeOperation='lighter';
@@ -1961,7 +1982,7 @@ var V=(function(){
     x.globalAlpha=1;x.globalCompositeOperation='source-over';
     drawVerse(x,t,rgb);
   }
-  buildPanes();makeStars();resize();addEventListener('resize',function(){resize();if(verse.cur){var tx=verse.cur.text;verse.cur=null;verse.next=null;setVerse(tx);}});
+  buildPanes(C);buildPanes(SD);makeStars(C);makeStars(SD);resize();addEventListener('resize',function(){resize();if(verse.cur){var tx=verse.cur.text;verse.cur=null;verse.next=null;setVerse(tx);}});
   setPalette(PAL['per annum']);requestAnimationFrame(draw);
   return {palette:setPalette,chord:chord,pulse:pulse,resolve:function(){resolveT=now();},
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
@@ -2007,6 +2028,22 @@ $('gate').onclick=function(){
   $('gate').classList.add('gone');document.body.classList.remove('intro');
   setTimeout(function(){$('gate').hidden=true;},2400);
 };
+// on a computer or TV: F for full screen, space to begin or pause; the cursor and controls rest when the mouse does
+document.addEventListener('keydown',function(e){
+  if(!document.body.classList.contains('entered')||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(/INPUT|SELECT|TEXTAREA/.test((e.target&&e.target.tagName)||''))return;
+  if(e.key==='f'||e.key==='F'){var d=document,el=d.documentElement;
+    if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d);}
+    else{var rq=el.requestFullscreen||el.webkitRequestFullscreen;if(rq)rq.call(el);}
+    e.preventDefault();}
+  else if(e.key===' '){$('play').click();e.preventDefault();}
+  else if(e.key==='Escape'){$('sheet').classList.remove('open');}
+});
+if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches){
+  var calmT=0;function stir(){document.body.classList.remove('calm');clearTimeout(calmT);
+    calmT=setTimeout(function(){if(playing&&!$('sheet').classList.contains('open'))document.body.classList.add('calm');else stir();},6000);}
+  ['mousemove','mousedown','keydown','wheel'].forEach(function(ev){document.addEventListener(ev,stir,{passive:true});});stir();
+}
 })();
 </script>
 </body>
