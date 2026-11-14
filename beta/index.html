@@ -2206,7 +2206,10 @@ var Rooms=(function(){
       x.fillStyle='#FBF4E6';x.font=fs+"px 'Pfeffer',Fondamento,serif";x.fillText(o.chord.label.symbol,cw/2,ch*0.5);
       x.fillStyle='#EADFC8';x.font='italic '+Math.round(fs*0.48)+'px Alegreya,serif';x.fillText(word(o.chord),cw/2,ch*0.73);
       x.shadowBlur=0;x.fillStyle='rgba(230,196,110,.85)';x.beginPath();x.moveTo(cw/2,-3);x.lineTo(cw/2+3.2,2);x.lineTo(cw/2,7);x.lineTo(cw/2-3.2,2);x.closePath();x.fill();
-      o.face=c;});
+      o.face=c;
+      var gcv=mk(c.width,c.height),gx=gcv.getContext('2d');gx.drawImage(c,0,0);
+      try{var im=gx.getImageData(0,0,gcv.width,gcv.height),d=im.data;for(var i=0;i<d.length;i+=4){var l=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)*0.8;d[i]=d[i+1]=d[i+2]=l;}gx.putImageData(im,0,0);}catch(e){}
+      o.gray=gcv;o.s=0;o.g=0;});
   }
   function cardX(i){var n=opts?opts.length:3,tot=n*L.cw+(n-1)*L.gap;return (W-tot)/2+i*(L.cw+L.gap);}
   function layoutHits(){
@@ -2254,24 +2257,35 @@ var Rooms=(function(){
     x.globalAlpha=1;x.globalCompositeOperation='source-over';
     drawCards(x,t);
   }
+  var prev=null,prevAt=0,lastCardT=0;
   function drawCards(x,t){
-    if(!opts||!L.plate)return;
-    var now=performance.now(),p=clamp((now-lapStart)/(lapEnd-lapStart),0,1),u=p,cw=L.cw,ch=L.ch,fade=clamp((now-shownAt)/900,0,1);
-    opts.forEach(function(o,i){
-      var X=cardX(i),Y=L.cardsTop,sel=picked===i,oth=picked>=0&&!sel,lift=sel?-4:0;
-      x.save();x.translate(X,Y+lift);x.globalAlpha=fade*(oth?0.45:1);
-      if(sel){x.globalCompositeOperation='lighter';x.globalAlpha=fade*0.45;x.drawImage(SP.gold,-cw*0.25,-ch*0.2,cw*1.5,ch*1.4);x.globalCompositeOperation='source-over';x.globalAlpha=fade;}
-      x.drawImage(o.face||L.plate,-20,-20,cw+40,ch+40);
+    if(!L.plate)return;
+    var now=performance.now(),dt=Math.min(0.1,(now-(lastCardT||now))/1000);lastCardT=now;
+    // the last chord's cards dissolve while the new ones rise
+    if(prev){var pa=1-clamp((now-prevAt)/1200,0,1);if(pa<=0)prev=null;else drawSet(x,t,prev,pa,1,dt,prev.picked);}
+    if(opts){var na=clamp((now-shownAt)/1200,0,1);drawSet(x,t,opts,na*na*(3-2*na),clamp((now-lapStart)/(lapEnd-lapStart),0,1),dt,picked);}
+  }
+  function drawSet(x,t,set,alpha,u,dt,pk){
+    var cw=L.cw,ch=L.ch,n=set.length,tot=n*cw+(n-1)*L.gap;
+    set.forEach(function(o,i){
+      var X=(W-tot)/2+i*(cw+L.gap),Y=L.cardsTop,sel=pk===i,oth=pk>=0&&!sel;
+      // ease toward chosen / passed over, never jump
+      o.s=(o.s||0)+((sel?1:0)-(o.s||0))*(1-Math.exp(-dt/0.35));o.g=(o.g||0)+((oth?1:0)-(o.g||0))*(1-Math.exp(-dt/0.45));
+      x.save();x.translate(X,Y-4*o.s);
+      if(o.s>0.01){x.globalCompositeOperation='lighter';x.globalAlpha=alpha*0.45*o.s;x.drawImage(SP.gold,-cw*0.25,-ch*0.2,cw*1.5,ch*1.4);x.globalCompositeOperation='source-over';}
+      x.globalAlpha=alpha*(1-o.g*0.75);x.drawImage(o.face||L.plate,-20,-20,cw+40,ch+40);
+      if(o.g>0.01&&o.gray){x.globalAlpha=alpha*o.g*0.6;x.drawImage(o.gray,-20,-20,cw+40,ch+40);}
+      var lit=alpha*(1-o.g*0.7);
       // the sheen crossing the bronze
       var sp=((t+i*1.3+0.4)%8)/8;if(sp<0.55){var bx=-cw*0.6+sp/0.55*cw*2.2;x.save();rr(x,0,0,cw,ch,14);x.clip();
         var g=x.createLinearGradient(bx-cw*0.25,0,bx+cw*0.25,ch*0.35);g.addColorStop(0,'rgba(255,233,192,0)');g.addColorStop(.5,'rgba(255,244,220,.22)');g.addColorStop(1,'rgba(255,233,192,0)');
-        x.fillStyle=g;x.globalCompositeOperation='lighter';x.fillRect(0,0,cw,ch);x.restore();}
+        x.fillStyle=g;x.globalCompositeOperation='lighter';x.globalAlpha=lit;x.fillRect(0,0,cw,ch);x.restore();}
       // the gold trail behind the glint, then its tail and the glint itself
-      if(u>0.002){x.strokeStyle='rgba(230,196,110,'+(sel?.6:.34)+')';x.lineWidth=2;x.lineCap='round';x.beginPath();
-        var n=Math.max(2,Math.round(u*90));for(var j=0;j<=n;j++){var q=perim(cw,ch,u*j/n);if(j)x.lineTo(q[0],q[1]);else x.moveTo(q[0],q[1]);}x.stroke();}
-      if(p<1){x.globalCompositeOperation='lighter';
-        for(var tl=6;tl>=1;tl--){var q2=perim(cw,ch,Math.max(0,u-tl*0.012)),z=12-tl*0.8;x.globalAlpha=fade*(0.6-tl*0.085);x.drawImage(SP.gold,q2[0]-z/2,q2[1]-z/2,z,z);}
-        var hq=perim(cw,ch,u);x.globalAlpha=fade*0.9;x.drawImage(SP.gold,hq[0]-14,hq[1]-14,28,28);x.drawImage(SP.dust,hq[0]-5,hq[1]-5,10,10);}
+      if(u>0.002){x.globalAlpha=lit;x.strokeStyle='rgba(230,196,110,'+(0.34+0.3*o.s)+')';x.lineWidth=2;x.lineCap='round';x.beginPath();
+        var m=Math.max(2,Math.round(u*90));for(var j=0;j<=m;j++){var q=perim(cw,ch,u*j/m);if(j)x.lineTo(q[0],q[1]);else x.moveTo(q[0],q[1]);}x.stroke();}
+      if(u<1){x.globalCompositeOperation='lighter';
+        for(var tl=6;tl>=1;tl--){var q2=perim(cw,ch,Math.max(0,u-tl*0.012)),z=12-tl*0.8;x.globalAlpha=lit*(0.6-tl*0.085);x.drawImage(SP.gold,q2[0]-z/2,q2[1]-z/2,z,z);}
+        var hq=perim(cw,ch,u);x.globalAlpha=lit*0.9;x.drawImage(SP.gold,hq[0]-14,hq[1]-14,28,28);x.drawImage(SP.dust,hq[0]-5,hq[1]-5,10,10);}
       x.restore();
     });
   }
@@ -2489,8 +2503,8 @@ var Rooms=(function(){
   window.__cathedraLap=function(){return opts?(performance.now()-lapStart)/(lapEnd-lapStart):null;};
   return {
     place:place,go:go,goTo:goTo,room:function(){return room;},
-    offer:function(list,start,end){opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now();faces();layoutHits();},
-    clear:function(){opts=null;picked=-1;hits.innerHTML='';},
+    offer:function(list,start,end){if(opts&&opts.length&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now();faces();layoutHits();},
+    clear:function(){if(opts&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=null;picked=-1;hits.innerHTML='';},
     picked:function(){return picked;},
     relayout:function(){if(room==='organum')buildLoft();if(room==='crypta')buildCrypt();}
   };
