@@ -891,10 +891,14 @@ Organ.mtof = mtof; Organ.TEMPER = TEMPER;
 // moving between places: 'crypta' hears the organ through the vault — highs gone, the pedal felt in the floor
 Organ.prototype.room = function (name, secs) {
   if (!this.ctx) return;
-  var t = this.ctx.currentTime, k = (secs || 1.2) / 3, down = name === 'crypta';
-  this.roomLP.frequency.cancelScheduledValues(t); this.roomLo.gain.cancelScheduledValues(t);
-  this.roomLP.frequency.setTargetAtTime(down ? 620 : 20000, t, k);
-  this.roomLo.gain.setTargetAtTime(down ? 5 : 0, t, k);
+  // sweep the filter evenly through the octaves (as the ear hears it), not evenly in Hertz,
+  // so the vault closes and opens at the same gentle pace in both directions
+  var t = this.ctx.currentTime, T = Math.max(0.5, secs || 2.2), down = name === 'crypta';
+  var f = this.roomLP.frequency, g = this.roomLo.gain, f0 = Math.max(200, f.value), g0 = g.value;
+  f.cancelScheduledValues(t); g.cancelScheduledValues(t);
+  f.setValueAtTime(f0, t); g.setValueAtTime(g0, t);
+  f.exponentialRampToValueAtTime(down ? 620 : 20000, t + T);
+  g.linearRampToValueAtTime(down ? 5 : 0, t + T);
 };
 G.Organ = Organ;
 })(window);
@@ -2470,7 +2474,7 @@ var Rooms=(function(){
     void el.offsetHeight;
     V.pause(to!=='navis');lastDraw=0;
     if(to==='organum'&&!(opts&&opts.length))try{loftWants();}catch(e){}
-    try{organ.room(to,1.4);}catch(e){}
+    try{organ.room(to,2.2);}catch(e){}
     var EASE='cubic-bezier(.45,0,.2,1)';
     tA.style.transition='transform 1.6s '+EASE+', opacity 1s ease-in';
     el.style.transition='transform 1.6s '+EASE+', opacity 1s ease-out .6s';
