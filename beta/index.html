@@ -1505,6 +1505,22 @@ setInterval(function(){
 var wake=null;
 function holdAwake(){try{if(navigator.wakeLock&&playing&&!wake){navigator.wakeLock.request('screen').then(function(w){wake=w;w.addEventListener('release',function(){wake=null;});}).catch(function(){});}}catch(e){}}
 function letSleep(){try{if(wake){wake.release();wake=null;}}catch(e){}}
+// when the sound moves to another output (Bluetooth speaker, home theater, AirPlay) or the system interrupts it,
+// bring the organ back up on the new route instead of staying silent on the old one
+function rebind(){
+  if(!organ.ctx||!(playing||ringing))return;
+  try{unlockIOS();}catch(e){}
+  var c=organ.ctx;
+  if(c.state==='running'){c.suspend().then(function(){return c.resume();}).catch(function(){});}
+  else c.resume().catch(function(){});
+}
+try{if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener('devicechange',function(){setTimeout(rebind,400);});}catch(e){}
+var watchedCtx=null;
+setInterval(function(){
+  if(!organ.ctx)return;
+  if(watchedCtx!==organ.ctx){watchedCtx=organ.ctx;organ.ctx.addEventListener('statechange',function(){if((playing||ringing)&&organ.ctx.state!=='running')setTimeout(function(){organ.ctx.resume().catch(function(){});},300);});}
+  if((playing||ringing)&&organ.ctx.state!=='running'&&document.visibilityState==='visible')organ.ctx.resume().catch(function(){});
+},2000);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){holdAwake();if(playing&&organ.ctx&&organ.ctx.state!=='running')organ.ctx.resume();}});
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude&&!/claude/i.test(location.hostname)){
   window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
