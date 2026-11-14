@@ -2731,6 +2731,22 @@ $('gate').onclick=function(){
   setTimeout(function(){$('gate').hidden=true;},2400);
   Rooms.place();
 };
+// a small tap you can feel on every button except the chord cards.
+// Android: the vibration API. iPhone: Safari has no vibration API; a hidden native switch gives a system tap
+// on the iOS versions that still allow it (Apple closed this in iOS 26.5), and nothing at all elsewhere.
+var hapLabel=null;
+function buzz(){
+  try{if(navigator.vibrate&&!/iP(hone|ad|od)/.test(navigator.userAgent)){navigator.vibrate(12);return;}}catch(e){}
+  try{if(!hapLabel){var i=document.createElement('input');i.type='checkbox';i.setAttribute('switch','');i.id='hapSwitch';
+      hapLabel=document.createElement('label');hapLabel.htmlFor='hapSwitch';hapLabel.setAttribute('aria-hidden','true');
+      [i,hapLabel].forEach(function(el){el.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';document.body.appendChild(el);});}
+    hapLabel.click();}catch(e){}
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('button,.chip,summary');
+  if(!b||b.classList.contains('ohit')||b.id==='hapSwitch')return;
+  buzz();
+},true);
 // on a computer or TV: F for full screen, space to begin or pause; the cursor and controls rest when the mouse does
 document.addEventListener('keydown',function(e){
   if(!document.body.classList.contains('entered')||e.metaKey||e.ctrlKey||e.altKey)return;
