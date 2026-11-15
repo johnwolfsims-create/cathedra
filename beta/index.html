@@ -69,6 +69,14 @@ body.in-room #toVetus,body.in-room #toNovum{opacity:0;pointer-events:none}
 .lec .en{font-family:Alegreya,serif;font-style:italic;color:#E8DFCC;line-height:1.38;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .lec.dwell .la,.lec.pray .la{animation-duration:6s}
 .lec.dwell .en,.lec.pray .en{color:#F3EBD9}
+/* in the transepts only the Word remains: play and Ordo step aside into the corner */
+body.room-vetus #intro,body.room-novum #intro,body.room-vetus #motto,body.room-novum #motto,body.room-vetus #chord,body.room-novum #chord,
+body.room-vetus #elapsed,body.room-novum #elapsed,body.room-vetus #modeline,body.room-novum #modeline,
+body.room-vetus .roomhead,body.room-novum .roomhead,body.room-vetus #toNavisSide,body.room-novum #toNavisSide{display:none!important}
+body.room-vetus #panel,body.room-novum #panel{left:auto;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);animation:cornerIn 1.4s ease .5s both}
+body.room-vetus #panel .row,body.room-novum #panel .row{gap:6px}
+body.room-vetus #play,body.room-novum #play{width:52px;height:52px}
+@keyframes cornerIn{from{opacity:0}to{opacity:1}}
 .ohit{all:unset;position:absolute;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}
 #memento{position:absolute;left:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 #memento .sc{color:#9C958A;font-size:11px;letter-spacing:.22em}
@@ -1661,16 +1669,22 @@ var V=(function(){
 
   function buildPanes(set){
     var panes=set.panes;panes.length=0;var seed=set.seed;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    // hand-cut glass: a net of small, uneven pieces in lead, like the rose windows
     [LL,RR].forEach(function(l){
-      var y=l.apex-2;
-      while(y<l.yb){var ph=[18,22,26][Math.floor(rnd()*3)],x=l.x0;
-        while(x<l.x1){var pw=[16,20,24][Math.floor(rnd()*3)],cx=x+pw/2,cy=y+ph/2;
-          if([[x,y],[x+pw,y],[x,y+ph],[x+pw,y+ph],[cx,cy]].some(function(p){return inside(l,p[0],p[1]);})){
-            panes.push({t:'r',x:x,y:y,w:Math.min(pw,l.x1-x),h:Math.min(ph,l.yb-y),cx:cx,cy:cy,l:l,
-              v:Math.max(0,Math.min(3,Math.floor((l.yb-cy)/((l.yb-l.apex)/4)))),ph:rnd()*6.28,sp:.12+rnd()*.3,pick:rnd(),c:[0,0,0],b:0.2});
-          }
-          x+=pw;}
-        y+=ph;}
+      var n=7,cw=(l.x1-l.x0)/n,y0=l.apex-4,rows=Math.ceil((l.yb-y0)/15),rh=(l.yb-y0)/rows,V=[],i,j;
+      for(j=0;j<=rows;j++){V.push([]);for(i=0;i<=n;i++){var jx=(i===0||i===n)?0:(rnd()-.5)*cw*0.38,jy=(j===0||j===rows)?0:(rnd()-.5)*rh*0.34;V[j].push([l.x0+i*cw+jx,y0+j*rh+jy]);}}
+      var used={};function key(a,b){return a+','+b;}
+      for(j=0;j<rows;j++)for(i=0;i<n;i++){
+        if(used[key(i,j)])continue;used[key(i,j)]=1;
+        var q,u=rnd();
+        if(u<0.3&&i<n-1&&!used[key(i+1,j)]){used[key(i+1,j)]=1;q=[V[j][i],V[j][i+1],V[j][i+2],V[j+1][i+2],V[j+1][i+1],V[j+1][i]];}
+        else if(u<0.55&&j<rows-1){used[key(i,j+1)]=1;q=[V[j][i],V[j][i+1],V[j+1][i+1],V[j+2][i+1],V[j+2][i],V[j+1][i]];}
+        else q=[V[j][i],V[j][i+1],V[j+1][i+1],V[j+1][i]];
+        var cx=0,cy=0;q.forEach(function(p){cx+=p[0];cy+=p[1];});cx/=q.length;cy/=q.length;
+        if(!q.concat([[cx,cy]]).some(function(p){return inside(l,p[0],p[1]);}))continue;
+        panes.push({t:'q',q:q,cx:cx,cy:cy,l:l,v:Math.max(0,Math.min(3,Math.floor((l.yb-cy)/((l.yb-l.apex)/4)))),ph:rnd()*6.28,sp:.12+rnd()*.3,pick:rnd(),c:[0,0,0],b:0.2,
+          tr:rnd()<0.05?0.55+rnd()*0.15:0.86+rnd()*0.14,ga:rnd()*6.28});
+      }
     });
     for(var i=0;i<8;i++){var a=i*Math.PI/4;panes.push({t:'c',x:ROSE.x+Math.cos(a)*28,y:ROSE.y+Math.sin(a)*28,cx:ROSE.x+Math.cos(a)*28,cy:ROSE.y+Math.sin(a)*28,r:15,v:3,ph:rnd()*6.28,sp:.15+rnd()*.3,pick:(i%2?0.2:0.7)+rnd()*0.1,c:[0,0,0],b:0.2});}
     panes.push({t:'c',x:ROSE.x,y:ROSE.y,cx:ROSE.x,cy:ROSE.y,r:13,v:3,ph:0,sp:.2,pick:.995,c:[0,0,0],b:0.2,hub:1});
@@ -1722,17 +1736,24 @@ var V=(function(){
     x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,tex.width,tex.height);
     x.setTransform(k,0,0,k,0,0);
     var seed=set.seed+4;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    function qpath(q){x.beginPath();x.moveTo(q[0][0],q[0][1]);for(var i=1;i<q.length;i++)x.lineTo(q[i][0],q[i][1]);x.closePath();}
     panes.forEach(function(p){
-      var cx=p.cx+(r()-.5)*6,cy=p.cy+(r()-.5)*6,rad=p.t==='c'?p.r:Math.max(p.w,p.h)*0.75;
-      var g=x.createRadialGradient(cx,cy,rad*0.1,p.cx,p.cy,rad*1.05);
-      var e=150+Math.floor(r()*40);
-      g.addColorStop(0,'rgb(255,255,255)');g.addColorStop(1,'rgb('+e+','+e+','+e+')');
-      x.fillStyle=g;
-      if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.fill();}else x.fillRect(p.x,p.y,p.w,p.h);
-      // streaks
-      x.strokeStyle='rgba(0,0,0,0.06)';x.lineWidth=0.6;
-      var n=1+Math.floor(r()*3);for(var i=0;i<n;i++){var sx=(p.t==='c'?p.x-p.r:p.x)+r()*(p.w||p.r*2);x.beginPath();x.moveTo(sx,p.t==='c'?p.y-p.r:p.y);x.lineTo(sx+(r()-.5)*8,p.t==='c'?p.y+p.r:p.y+p.h);x.stroke();}
+      var cx=p.cx+(r()-.5)*4,cy=p.cy+(r()-.5)*4,rad=p.t==='c'?p.r:10,tr=p.tr||1;
+      var g=x.createRadialGradient(cx,cy,rad*0.1,p.cx,p.cy,rad*1.15),e=Math.round((150+Math.floor(r()*40))*tr),w=Math.round(255*tr);
+      g.addColorStop(0,'rgb('+w+','+w+','+w+')');g.addColorStop(1,'rgb('+e+','+e+','+e+')');x.fillStyle=g;
+      if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.fill();return;}
+      qpath(p.q);x.fill();
+      // streaks in the glass, across the piece at its own angle
+      x.save();qpath(p.q);x.clip();var ga=p.ga||0,sg=x.createLinearGradient(p.cx-Math.cos(ga)*8,p.cy-Math.sin(ga)*8,p.cx+Math.cos(ga)*8,p.cy+Math.sin(ga)*8);
+      sg.addColorStop(0,'rgba(0,0,0,.16)');sg.addColorStop(.5,'rgba(0,0,0,0)');sg.addColorStop(1,'rgba(0,0,0,.1)');x.fillStyle=sg;x.fillRect(p.cx-12,p.cy-12,24,24);
+      // now and then the glass-painter's brush
+      if(r()<0.22){x.strokeStyle='rgba(40,26,14,.32)';x.lineWidth=0.5+r()*0.6;x.beginPath();var a2=r()*6.28;x.moveTo(p.cx-Math.cos(a2)*4,p.cy-Math.sin(a2)*4);x.quadraticCurveTo(p.cx+(r()-.5)*5,p.cy+(r()-.5)*5,p.cx+Math.cos(a2)*4,p.cy+Math.sin(a2)*4);x.stroke();}
+      x.restore();
     });
+    // the lead between every piece
+    x.strokeStyle='#120d0a';x.lineWidth=1.25;x.lineJoin='round';
+    panes.forEach(function(p){if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.stroke();}});
+    [LL,RR].forEach(function(l){x.save();lancetPath(x,l);x.clip();panes.forEach(function(p){if(p.t!=='c'&&p.l===l){qpath(p.q);x.stroke();}});x.restore();});
     // mottling and grain
     x.setTransform(1,0,0,1,0,0);
     var img=x.getImageData(0,0,tex.width,tex.height),d=img.data,W2=tex.width;
@@ -1741,6 +1762,29 @@ var V=(function(){
       var m=cells[ci];if(m==null)m=cells[ci]=0.9+r()*0.1;var gr=m*(0.94+r()*0.06);
       if(d[i+3]===0)continue;d[i]*=gr;d[i+1]*=gr;d[i+2]*=gr;}
     x.putImageData(img,0,0);
+    makeStone(set,sc);
+  }
+  // carved stone: a dark under-edge, the face, a lit upper edge — and its soft shadow on the glass behind
+  function makeStone(set,sc){
+    var st=set.stone||(set.stone=document.createElement('canvas'));st.width=set.glass.width;st.height=set.glass.height;
+    var k=DPR*sc,x=st.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,st.width,st.height);x.setTransform(k,0,0,k,0,0);x.lineCap='round';x.lineJoin='round';
+    var parts=[[function(){lancetPath(x,LL);},6],[function(){lancetPath(x,RR);},6],[function(){x.beginPath();x.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);},6],
+      [function(){x.beginPath();x.moveTo(89,430);x.lineTo(89,682);x.moveTo(211,430);x.lineTo(211,682);},2.4]];
+    function cross(){var rr=ROSE.r-1,aw=9.5;x.beginPath();
+      x.moveTo(ROSE.x-aw,ROSE.y-rr);x.lineTo(ROSE.x+aw,ROSE.y-rr);x.lineTo(ROSE.x+aw*0.42,ROSE.y-aw*0.42);x.lineTo(ROSE.x+rr,ROSE.y-aw);x.lineTo(ROSE.x+rr,ROSE.y+aw);x.lineTo(ROSE.x+aw*0.42,ROSE.y+aw*0.42);
+      x.lineTo(ROSE.x+aw,ROSE.y+rr);x.lineTo(ROSE.x-aw,ROSE.y+rr);x.lineTo(ROSE.x-aw*0.42,ROSE.y+aw*0.42);x.lineTo(ROSE.x-rr,ROSE.y+aw);x.lineTo(ROSE.x-rr,ROSE.y-aw);x.lineTo(ROSE.x-aw*0.42,ROSE.y-aw*0.42);x.closePath();}
+    // shadows first, softened
+    x.save();x.translate(2,3);x.strokeStyle='rgba(0,0,0,.6)';parts.forEach(function(q){x.lineWidth=q[1]*1.6;q[0]();x.stroke();});x.fillStyle='rgba(0,0,0,.55)';cross();x.fill();x.restore();
+    var w=st.width,h=st.height,sm=document.createElement('canvas');sm.width=Math.max(1,w>>2);sm.height=Math.max(1,h>>2);sm.getContext('2d').drawImage(st,0,0,sm.width,sm.height);
+    x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,w,h);x.imageSmoothingQuality='high';x.drawImage(sm,0,0,w,h);x.setTransform(k,0,0,k,0,0);
+    // then the carving
+    function carve(fn,lw){x.strokeStyle='#26221e';x.lineWidth=lw*1.2;fn();x.stroke();x.strokeStyle='#625d56';x.lineWidth=lw*0.85;fn();x.stroke();
+      x.save();x.translate(-lw*0.18,-lw*0.24);x.strokeStyle='rgba(170,160,145,.45)';x.lineWidth=lw*0.26;fn();x.stroke();x.restore();}
+    parts.forEach(function(q){carve(q[0],q[1]);});
+    x.fillStyle='#26221e';cross();x.fill();x.save();x.beginPath();cross();x.clip();x.fillStyle='#655f58';x.translate(0.6,0.8);cross();x.fill();x.restore();
+    x.save();x.translate(-0.5,-0.6);x.strokeStyle='rgba(170,160,145,.4)';x.lineWidth=0.8;cross();x.stroke();x.restore();
+    x.beginPath();x.arc(ROSE.x,ROSE.y,5,0,6.2832);x.fillStyle='#736d65';x.fill();
+    carve(function(){lancetPath(x,OUT);},10);
   }
   // the beam: a soft, semi-defined fall of light to the floor, ending in the window's own shape
   var beam=null;
@@ -2067,29 +2111,21 @@ var V=(function(){
       acc[0]+=c[0]*b;acc[1]+=c[1]*b;acc[2]+=c[2]*b;wsum+=b;
       g.fillStyle='rgb('+(r|0)+','+(gg|0)+','+(bb|0)+')';
     }
-    g.strokeStyle='#100c09';g.lineWidth=2;
     [LL,RR].forEach(function(l){g.save();lancetPath(g,l);g.clip();
-      for(var i=0;i<panes.length;i++){var p=panes[i];if(p.l!==l)continue;shade(p);g.fillRect(p.x,p.y,p.w,p.h);g.strokeRect(p.x,p.y,p.w,p.h);}
+      for(var i=0;i<panes.length;i++){var p=panes[i];if(p.l!==l)continue;shade(p);var q=p.q;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(var k2=1;k2<q.length;k2++)g.lineTo(q[k2][0],q[k2][1]);g.closePath();g.fill();}
       g.restore();});
-    panes.forEach(function(p){if(p.t!=='c')return;shade(p);g.beginPath();g.arc(p.x,p.y,p.r,0,6.2832);g.fill();g.stroke();});
+    panes.forEach(function(p){if(p.t!=='c')return;shade(p);g.beginPath();g.arc(p.x,p.y,p.r,0,6.2832);g.fill();});
     if(skyS.night>0.05){g.save();lancetPath(g,LL);lancetPath(g,RR);g.clip();g.fillStyle='#fff';
       stars.forEach(function(st){var a=skyS.night*(0.25+0.45*(0.5+0.5*Math.sin(st.ph+t*st.sp)))*(1-endDark*0.5);g.globalAlpha=a;g.beginPath();g.arc(st.x,st.y,st.r,0,6.2832);g.fill();});g.restore();g.globalAlpha=1;}
     if(S.texture!==false){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='multiply';g.drawImage(tex,0,0);g.restore();}
-    g.lineWidth=6;g.strokeStyle='#6f6a63';lancetPath(g,LL);g.stroke();lancetPath(g,RR);g.stroke();g.beginPath();g.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);g.stroke();
-    // a stone cross in the rose: the light pours around it
-    g.fillStyle='#6f6a63';var rr=ROSE.r-1,aw=9.5;
-    g.beginPath();
-    g.moveTo(ROSE.x-aw,ROSE.y-rr);g.lineTo(ROSE.x+aw,ROSE.y-rr);g.lineTo(ROSE.x+aw*0.42,ROSE.y-aw*0.42);g.lineTo(ROSE.x+rr,ROSE.y-aw);g.lineTo(ROSE.x+rr,ROSE.y+aw);g.lineTo(ROSE.x+aw*0.42,ROSE.y+aw*0.42);
-    g.lineTo(ROSE.x+aw,ROSE.y+rr);g.lineTo(ROSE.x-aw,ROSE.y+rr);g.lineTo(ROSE.x-aw*0.42,ROSE.y+aw*0.42);g.lineTo(ROSE.x-rr,ROSE.y+aw);g.lineTo(ROSE.x-rr,ROSE.y-aw);g.lineTo(ROSE.x-aw*0.42,ROSE.y-aw*0.42);g.closePath();g.fill();
-    g.strokeStyle='#4e4a45';g.lineWidth=1;g.stroke();
-    g.beginPath();g.arc(ROSE.x,ROSE.y,5,0,6.2832);g.fillStyle='#7a746c';g.fill();
-    g.lineWidth=10;g.strokeStyle='#7a746c';lancetPath(g,OUT);g.stroke();
-    g.lineWidth=3;g.strokeStyle='#26221e';g.beginPath();g.moveTo(89,430);g.lineTo(89,682);g.moveTo(211,430);g.lineTo(211,682);g.stroke();
+    // carved stone over the glass, with the shadows it throws: drawn once, laid on each frame
+    if(set.stone){g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(set.stone,0,0);g.restore();}
     }
     paint(C,geo.s);if(geo.side)paint(SD,geo.side.s);
     var W3=wins();function glassAll(){W3.forEach(function(wn){if(wn.mirror){x.save();x.translate(wn.x+wn.w,wn.y);x.scale(-1,1);x.drawImage(wn.set.glass,0,0,wn.w,wn.h);x.restore();}else x.drawImage(wn.set.glass,wn.x,wn.y,wn.w,wn.h);});}
 
     // the colour of the light leaving the window: the glass it actually shines through
+    if(!(wsum>0)){acc=[200,180,150];wsum=1;}
     var lc=[acc[0]/wsum,acc[1]/wsum,acc[2]/wsum],mx=Math.max(lc[0],lc[1],lc[2],1);
     lc=lc.map(function(x){return Math.min(255,x/mx*235);});
     if(skyS.night>0)lc=mixc(lc,[255,170,90],0.55*skyS.night);
@@ -2626,7 +2662,7 @@ var Rooms=(function(){
     TR.lamps=[[cx-R*1.25,cy-R*0.15],[cx+R*1.25,cy-R*0.15]].filter(function(l){return l[0]>pw*0.9&&l[0]<W-pw*0.9;});
     var r=rnd(3);TR.motes=[];for(var m=0;m<18;m++)TR.motes.push({x:cx+(r()-.5)*2.4*R,y:cy-R+r()*R*2.6,s:(0.8+r()*1.2)*k,d:10+r()*8,o:r()*18});
     TR.haze=[];for(m=0;m<6;m++)TR.haze.push({x:cx+(r()-.5)*R*2,d:40+r()*30,o:r()*70,s:R*(0.5+r()*0.5)});
-    var lb=$('lectio');lb.style.top=Math.round(cy+R+R*0.16+20*k)+'px';lb.style.height=Math.max(90,Math.round((H-218)-(cy+R+R*0.16+20*k)))+'px';
+    var lb=$('lectio');lb.style.top=Math.round(cy+R+R*0.16+20*k)+'px';lb.style.height=Math.max(90,Math.round((H-84)-(cy+R+R*0.16+20*k)))+'px';
     $('transeptLabel').textContent=side==='vetus'?'vetus testamentum':'novum testamentum';
     var nb=$('toNavisSide');nb.textContent=side==='vetus'?'navis →':'← navis';nb.classList.toggle('lefttop',side==='novum');nb.setAttribute('aria-label',side==='vetus'?'Back to the nave, to the right':'Back to the nave, to the left');
     fitPhrase();
