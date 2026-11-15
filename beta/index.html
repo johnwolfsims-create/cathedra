@@ -1722,6 +1722,92 @@ function changed(harmony){
   ui();
 }
 
+// ---- rain on the glass: beads that gather, and now and then grow heavy and run, leaving a wet trail.
+// One engine for every window; each window gives its own shape. Seen from inside, a drop is a tiny lens:
+// a dark rim, and a bright point where it gathers the light coming through.
+var Rain = (function () {
+  function mk(w, h) { var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  var RIM = null, CORE = null;
+  function sprites() {
+    if (RIM) return;
+    var n = 64, c = mk(n, n), x = c.getContext('2d'), g = x.createRadialGradient(n / 2, n / 2, n * 0.18, n / 2, n / 2, n / 2);
+    g.addColorStop(0, 'rgba(6,8,12,0)'); g.addColorStop(0.62, 'rgba(6,8,12,.16)'); g.addColorStop(0.86, 'rgba(4,5,8,.62)'); g.addColorStop(1, 'rgba(4,5,8,0)');
+    x.fillStyle = g; x.fillRect(0, 0, n, n); RIM = c;
+    c = mk(n, n); x = c.getContext('2d'); g = x.createRadialGradient(n * 0.5, n * 0.6, 0, n * 0.5, n * 0.6, n * 0.32);
+    g.addColorStop(0, 'rgba(255,248,232,.95)'); g.addColorStop(0.35, 'rgba(255,240,215,.35)'); g.addColorStop(1, 'rgba(255,240,215,0)');
+    x.fillStyle = g; x.fillRect(0, 0, n, n);
+    var g2 = x.createRadialGradient(n * 0.42, n * 0.3, 0, n * 0.42, n * 0.3, n * 0.09); g2.addColorStop(0, 'rgba(255,255,255,.7)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g2; x.fillRect(0, 0, n, n); CORE = c;
+  }
+  // o: {w,h (local units), u (px per unit), inside(x,y), clip(ctx)}
+  function Field(o) {
+    sprites();
+    this.o = o; this.beads = []; this.runs = []; this.t = -1; this.pe = 0; this.trail = null; this.ts = 0.6;
+    // how much glass there is, and where, for scattering beads
+    var pts = [], hit = 0, N = 1400, seed = 7;
+    function r() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i < N; i++) { var x = r() * o.w, y = r() * o.h; if (o.inside(x, y)) { hit++; if (pts.length < 600) pts.push([x, y]); } }
+    this.pts = pts; this.areaPx = hit / N * o.w * o.h * o.u * o.u; this.rnd = Math.random;
+  }
+  Field.prototype.spot = function () { var p = this.pts[(Math.random() * this.pts.length) | 0], j = 6 / this.o.u; return p ? [p[0] + (Math.random() - .5) * j * 2, p[1] + (Math.random() - .5) * j * 2] : [0, 0]; };
+  Field.prototype.step = function (t, want) {
+    var o = this.o, first = this.t < 0, dt = first ? 0 : Math.min(0.1, Math.max(0, t - this.t)); this.t = t;
+    if (first) {   // walk in on glass that is already wet
+      this.pe = want; var n0 = Math.min(o.max || 240, Math.round(want * this.areaPx / 260));
+      for (var f = 0; f < n0; f++) { var s0 = this.spot(); this.beads.push({ x: s0[0], y: s0[1], r: (1.0 + Math.pow(Math.random(), 2.0) * 2.6) / o.u, a: 1, born: t - 1 }); }
+    }
+    this.pe += (want - this.pe) * (1 - Math.exp(-dt / 3));   // the weather turns slowly
+    var p = this.pe, u = o.u;
+    if (p < 0.003 && !this.beads.length && !this.runs.length) { this.idle = true; return; }
+    this.idle = false;
+    if (!this.trail) { this.trail = mk(o.w * u * this.ts * (window.devicePixelRatio > 1 ? 1.4 : 1), o.h * u * this.ts * (window.devicePixelRatio > 1 ? 1.4 : 1)); this.tk = this.trail.width / o.w; }
+    var tx = this.trail.getContext('2d');
+    if (dt > 0) { tx.globalCompositeOperation = 'destination-out'; tx.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 5)).toFixed(4) + ')'; tx.fillRect(0, 0, this.trail.width, this.trail.height); tx.globalCompositeOperation = 'source-over'; }
+    // beads: the glass fills to a density set by the rain, and dries when it stops
+    var target = Math.min(o.max || 240, Math.round(p * this.areaPx / 260)), B = this.beads;
+    if (B.length < target) { var add = Math.min(target - B.length, Math.ceil((target - B.length) * dt * 0.9 + (Math.random() < dt * 30 * p ? 1 : 0))); for (var i = 0; i < add; i++) { var s = this.spot(); B.push({ x: s[0], y: s[1], r: (1.0 + Math.pow(Math.random(), 2.0) * 2.6) / u, a: 0, born: t }); } }
+    else if (B.length > target && Math.random() < dt * 4) B.splice((Math.random() * B.length) | 0, 1);
+    // runners: a heavy drop lets go and slides, stopping and starting, gathering what it meets
+    var rate = p < 0.02 ? 0 : (0.04 + 1.1 * p * p) * this.areaPx / 54000;
+    if (Math.random() < rate * dt && this.runs.length < 8) {
+      var bi = -1, br = 0; for (var k = 0; k < 6 && B.length; k++) { var j2 = (Math.random() * B.length) | 0; if (B[j2].r > br && B[j2].y < o.h * 0.8) { br = B[j2].r; bi = j2; } }
+      var st = bi >= 0 ? B.splice(bi, 1)[0] : (function (s) { return { x: s[0], y: s[1], r: 2.4 / u }; })(this.spot());
+      this.runs.push({ x: st.x, y: st.y, r: Math.max(st.r, 2.2 / u), v: 0, go: 0.3, ph: Math.random() * 6, drop: 0 });
+    }
+    var R = this.runs, tk = this.tk;
+    for (var q = R.length - 1; q >= 0; q--) {
+      var d = R[q], px = d.x, py = d.y;
+      d.go -= dt; if (d.go <= 0) { if (d.v > 0 && Math.random() < 0.35) { d.v = 0; d.go = 0.08 + Math.random() * 0.5; } else { d.v = (28 + Math.random() * 70) * (0.7 + d.r * u * 0.25) / u; d.go = 0.15 + Math.random() * 0.7; } }
+      d.y += d.v * dt; d.x += Math.sin(d.ph + d.y * u * 0.06) * d.v * dt * 0.12;
+      for (var b = B.length - 1; b >= 0; b--) { var e = B[b], dx = e.x - d.x, dy = e.y - d.y, rr = d.r + e.r; if (dx * dx + dy * dy < rr * rr) { d.r = Math.min(4.6 / u, Math.sqrt(d.r * d.r + e.r * e.r * 0.6)); B.splice(b, 1); d.go = Math.min(d.go, 0.05); } }
+      d.drop += d.v * dt * u; if (d.drop > 14 + Math.random() * 40) { d.drop = 0; if (B.length < (o.max || 240) + 20) B.push({ x: d.x + (Math.random() - .5) * d.r, y: d.y - d.r * 2, r: d.r * (0.3 + Math.random() * 0.25), a: 1, born: t - 1 }); d.r *= 0.97; }
+      if (d.v > 0) {   // the wet path it leaves
+        tx.lineCap = 'round'; tx.strokeStyle = 'rgba(6,8,12,.3)'; tx.lineWidth = d.r * 1.25 * tk; tx.beginPath(); tx.moveTo(px * tk, py * tk); tx.lineTo(d.x * tk, d.y * tk); tx.stroke();
+        tx.strokeStyle = 'rgba(255,244,226,.18)'; tx.lineWidth = d.r * 0.45 * tk; tx.beginPath(); tx.moveTo((px - d.r * 0.15) * tk, py * tk); tx.lineTo((d.x - d.r * 0.15) * tk, d.y * tk); tx.stroke();
+      }
+      if (d.y > o.h || !o.inside(d.x, d.y + d.r)) R.splice(q, 1);
+    }
+  };
+  // draw in the window's own coordinates; light: how bright the glass behind is (0..~1.5)
+  Field.prototype.draw = function (g, light) {
+    if (this.idle) return;
+    var o = this.o, p = this.pe, t = this.t, B = this.beads, R = this.runs, li = Math.max(0.12, Math.min(1.4, light));
+    g.save(); o.clip(g); g.clip();
+    if (p > 0.01) { g.fillStyle = 'rgba(10,13,20,' + (0.11 * p).toFixed(3) + ')'; g.fillRect(0, 0, o.w, o.h); }   // wet glass, a little greyer
+    g.globalAlpha = Math.min(1, 0.5 + 0.5 * li); g.drawImage(this.trail, 0, 0, o.w, o.h);
+    var i, d, a, r;
+    for (i = 0; i < B.length; i++) { d = B[i]; a = Math.min(1, (t - d.born) / 0.5); d.a = a; r = d.r * 1.25; g.globalAlpha = a; g.drawImage(RIM, d.x - r, d.y - r * 1.08, r * 2, r * 2.16); }
+    for (i = 0; i < R.length; i++) { d = R[i]; r = d.r * 1.3; g.globalAlpha = 0.9; g.drawImage(RIM, d.x - r, d.y - r * 1.2, r * 2, r * 2.4); }
+    g.globalCompositeOperation = 'lighter';
+    for (i = 0; i < B.length; i++) { d = B[i]; r = d.r * 1.25; g.globalAlpha = d.a * 0.75 * li; g.drawImage(CORE, d.x - r, d.y - r * 1.08, r * 2, r * 2.16); }
+    for (i = 0; i < R.length; i++) { d = R[i]; r = d.r * 1.3; g.globalAlpha = 0.85 * li; g.drawImage(CORE, d.x - r, d.y - r * 1.2, r * 2, r * 2.4); }
+    g.restore();
+  };
+  // the rain as the person has set it: heard rain means rain on the glass
+  function level() { try { return (S.ambitus > 0.01 ? S.pluvia : 0) || 0; } catch (e) { return 0; } }
+  return { Field: Field, level: level };
+})();
+
 /* ---------------- the window ---------------- */
 var V=(function(){
   var cv=$('nave'),main=cv.getContext('2d'),W=0,H=0,DPR=1;
@@ -1736,7 +1822,7 @@ var V=(function(){
   function now(){return performance.now()/1000;}
   function hex(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
   function lancet(x0,x1,ybase,yspring){var w=x1-x0,r=w*0.9,cx=(x0+x1)/2,apex=yspring-Math.sqrt(r*r-(r-w/2)*(r-w/2));return {x0:x0,x1:x1,yb:ybase,ys:yspring,r:r,cx:cx,apex:apex};}
-  function lancetPath(c,l){c.beginPath();c.moveTo(l.x0,l.yb);c.lineTo(l.x0,l.ys);
+  function lancetPath(c,l,keep){if(!keep)c.beginPath();c.moveTo(l.x0,l.yb);c.lineTo(l.x0,l.ys);
     c.arc(l.x0+l.r,l.ys,l.r,Math.PI,Math.atan2(l.apex-l.ys,l.cx-(l.x0+l.r)),false);
     c.arc(l.x1-l.r,l.ys,l.r,Math.atan2(l.apex-l.ys,l.cx-(l.x1-l.r)),0,false);
     c.lineTo(l.x1,l.yb);c.closePath();}
@@ -2195,6 +2281,11 @@ var V=(function(){
     if(skyS.night>0.05){g.save();lancetPath(g,LL);lancetPath(g,RR);g.clip();g.fillStyle='#fff';
       stars.forEach(function(st){var a=skyS.night*(0.25+0.45*(0.5+0.5*Math.sin(st.ph+t*st.sp)))*(1-endDark*0.5);g.globalAlpha=a;g.beginPath();g.arc(st.x,st.y,st.r,0,6.2832);g.fill();});g.restore();g.globalAlpha=1;}
     if(S.texture!==false){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='multiply';g.drawImage(tex,0,0);g.restore();}
+    // rain on the outside of the glass, under the stone
+    if(!set.rain||set.rain.o.u!==s)set.rain=new Rain.Field({w:300,h:700,u:s,max:320,
+      inside:function(x0,y0){var dx=x0-ROSE.x,dy=y0-ROSE.y;return inside(LL,x0,y0)||inside(RR,x0,y0)||dx*dx+dy*dy<ROSE.r*ROSE.r;},
+      clip:function(c){lancetPath(c,LL);lancetPath(c,RR,true);c.moveTo(ROSE.x+ROSE.r,ROSE.y);c.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);}});
+    set.rain.step(t,Rain.level());if(!set.rain.idle)set.rain.draw(g,(0.25+0.95*L)*skyS.bright*(1-0.9*endDark)+0.05);
     // carved stone over the glass, with the shadows it throws: drawn once, laid on each frame
     if(set.stone){g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(set.stone,0,0);g.restore();}
     }
@@ -2834,6 +2925,9 @@ var Rooms=(function(){
     // re-light the glass itself so the dark never dims the window
     x.globalAlpha=Math.min(1,(0.55+0.45*L)*(1-end)*(1-0.88*n));x.drawImage(TR.glass,cx-box/2,cy-box/2,box,box);x.globalAlpha=1;
     x.save();x.beginPath();x.arc(cx,cy,R*0.93,0,6.2832);x.clip();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,0.08+0.4*L+0.2*b)*(1-end)*(1-n);x.drawImage(TR.bloom,cx-box/2,cy-box/2,box,box);x.restore();x.globalAlpha=1;x.globalCompositeOperation='source-over';
+    // rain on the rose
+    var rf=TR.rain;if(!rf){var b2r=box/2;rf=TR.rain=new Rain.Field({w:box,h:box,u:1,max:210,inside:function(x0,y0){var dx=x0-b2r,dy=y0-b2r;return dx*dx+dy*dy<R*R*0.86;},clip:function(c){c.beginPath();c.arc(b2r,b2r,R*0.93,0,6.2832);}});}
+    rf.step(t,Rain.level());if(!rf.idle){x.save();x.translate(cx-box/2,cy-box/2);rf.draw(x,(0.3+0.9*L)*(1-0.85*n)*(1-end)+0.06);x.restore();}
     // the lantern over the rose: dark iron by day; by night the one light in the room, swaying a little on its chain
     var sw=Math.sin(t*0.9)*0.008+Math.sin(t*0.37+1)*0.006;
     x.save();x.translate(LN.x,0);x.rotate(sw);x.translate(-LN.w/2,0);
