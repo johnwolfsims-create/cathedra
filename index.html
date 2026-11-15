@@ -69,6 +69,14 @@ body.in-room #toVetus,body.in-room #toNovum{opacity:0;pointer-events:none}
 .lec .en{font-family:Alegreya,serif;font-style:italic;color:#E8DFCC;line-height:1.38;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .lec.dwell .la,.lec.pray .la{animation-duration:6s}
 .lec.dwell .en,.lec.pray .en{color:#F3EBD9}
+/* in the transepts only the Word remains: play and Ordo step aside into the corner */
+body.room-vetus #intro,body.room-novum #intro,body.room-vetus #motto,body.room-novum #motto,body.room-vetus #chord,body.room-novum #chord,
+body.room-vetus #elapsed,body.room-novum #elapsed,body.room-vetus #modeline,body.room-novum #modeline,
+body.room-vetus .roomhead,body.room-novum .roomhead,body.room-vetus #toNavisSide,body.room-novum #toNavisSide{display:none!important}
+body.room-vetus #panel,body.room-novum #panel{left:auto;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);animation:cornerIn 1.4s ease .5s both}
+body.room-vetus #panel .row,body.room-novum #panel .row{gap:6px}
+body.room-vetus #play,body.room-novum #play{width:52px;height:52px}
+@keyframes cornerIn{from{opacity:0}to{opacity:1}}
 .ohit{all:unset;position:absolute;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}
 #memento{position:absolute;left:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 #memento .sc{color:#9C958A;font-size:11px;letter-spacing:.22em}
@@ -1661,16 +1669,22 @@ var V=(function(){
 
   function buildPanes(set){
     var panes=set.panes;panes.length=0;var seed=set.seed;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    // hand-cut glass: a net of small, uneven pieces in lead, like the rose windows
     [LL,RR].forEach(function(l){
-      var y=l.apex-2;
-      while(y<l.yb){var ph=[18,22,26][Math.floor(rnd()*3)],x=l.x0;
-        while(x<l.x1){var pw=[16,20,24][Math.floor(rnd()*3)],cx=x+pw/2,cy=y+ph/2;
-          if([[x,y],[x+pw,y],[x,y+ph],[x+pw,y+ph],[cx,cy]].some(function(p){return inside(l,p[0],p[1]);})){
-            panes.push({t:'r',x:x,y:y,w:Math.min(pw,l.x1-x),h:Math.min(ph,l.yb-y),cx:cx,cy:cy,l:l,
-              v:Math.max(0,Math.min(3,Math.floor((l.yb-cy)/((l.yb-l.apex)/4)))),ph:rnd()*6.28,sp:.12+rnd()*.3,pick:rnd(),c:[0,0,0],b:0.2});
-          }
-          x+=pw;}
-        y+=ph;}
+      var n=7,cw=(l.x1-l.x0)/n,y0=l.apex-4,rows=Math.ceil((l.yb-y0)/15),rh=(l.yb-y0)/rows,V=[],i,j;
+      for(j=0;j<=rows;j++){V.push([]);for(i=0;i<=n;i++){var jx=(i===0||i===n)?0:(rnd()-.5)*cw*0.38,jy=(j===0||j===rows)?0:(rnd()-.5)*rh*0.34;V[j].push([l.x0+i*cw+jx,y0+j*rh+jy]);}}
+      var used={};function key(a,b){return a+','+b;}
+      for(j=0;j<rows;j++)for(i=0;i<n;i++){
+        if(used[key(i,j)])continue;used[key(i,j)]=1;
+        var q,u=rnd();
+        if(u<0.3&&i<n-1&&!used[key(i+1,j)]){used[key(i+1,j)]=1;q=[V[j][i],V[j][i+1],V[j][i+2],V[j+1][i+2],V[j+1][i+1],V[j+1][i]];}
+        else if(u<0.55&&j<rows-1){used[key(i,j+1)]=1;q=[V[j][i],V[j][i+1],V[j+1][i+1],V[j+2][i+1],V[j+2][i],V[j+1][i]];}
+        else q=[V[j][i],V[j][i+1],V[j+1][i+1],V[j+1][i]];
+        var cx=0,cy=0;q.forEach(function(p){cx+=p[0];cy+=p[1];});cx/=q.length;cy/=q.length;
+        if(!q.concat([[cx,cy]]).some(function(p){return inside(l,p[0],p[1]);}))continue;
+        panes.push({t:'q',q:q,cx:cx,cy:cy,l:l,v:Math.max(0,Math.min(3,Math.floor((l.yb-cy)/((l.yb-l.apex)/4)))),ph:rnd()*6.28,sp:.12+rnd()*.3,pick:rnd(),c:[0,0,0],b:0.2,
+          tr:rnd()<0.05?0.55+rnd()*0.15:0.86+rnd()*0.14,ga:rnd()*6.28});
+      }
     });
     for(var i=0;i<8;i++){var a=i*Math.PI/4;panes.push({t:'c',x:ROSE.x+Math.cos(a)*28,y:ROSE.y+Math.sin(a)*28,cx:ROSE.x+Math.cos(a)*28,cy:ROSE.y+Math.sin(a)*28,r:15,v:3,ph:rnd()*6.28,sp:.15+rnd()*.3,pick:(i%2?0.2:0.7)+rnd()*0.1,c:[0,0,0],b:0.2});}
     panes.push({t:'c',x:ROSE.x,y:ROSE.y,cx:ROSE.x,cy:ROSE.y,r:13,v:3,ph:0,sp:.2,pick:.995,c:[0,0,0],b:0.2,hub:1});
@@ -1722,17 +1736,24 @@ var V=(function(){
     x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,tex.width,tex.height);
     x.setTransform(k,0,0,k,0,0);
     var seed=set.seed+4;function r(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+    function qpath(q){x.beginPath();x.moveTo(q[0][0],q[0][1]);for(var i=1;i<q.length;i++)x.lineTo(q[i][0],q[i][1]);x.closePath();}
     panes.forEach(function(p){
-      var cx=p.cx+(r()-.5)*6,cy=p.cy+(r()-.5)*6,rad=p.t==='c'?p.r:Math.max(p.w,p.h)*0.75;
-      var g=x.createRadialGradient(cx,cy,rad*0.1,p.cx,p.cy,rad*1.05);
-      var e=150+Math.floor(r()*40);
-      g.addColorStop(0,'rgb(255,255,255)');g.addColorStop(1,'rgb('+e+','+e+','+e+')');
-      x.fillStyle=g;
-      if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.fill();}else x.fillRect(p.x,p.y,p.w,p.h);
-      // streaks
-      x.strokeStyle='rgba(0,0,0,0.06)';x.lineWidth=0.6;
-      var n=1+Math.floor(r()*3);for(var i=0;i<n;i++){var sx=(p.t==='c'?p.x-p.r:p.x)+r()*(p.w||p.r*2);x.beginPath();x.moveTo(sx,p.t==='c'?p.y-p.r:p.y);x.lineTo(sx+(r()-.5)*8,p.t==='c'?p.y+p.r:p.y+p.h);x.stroke();}
+      var cx=p.cx+(r()-.5)*4,cy=p.cy+(r()-.5)*4,rad=p.t==='c'?p.r:10,tr=p.tr||1;
+      var g=x.createRadialGradient(cx,cy,rad*0.1,p.cx,p.cy,rad*1.15),e=Math.round((150+Math.floor(r()*40))*tr),w=Math.round(255*tr);
+      g.addColorStop(0,'rgb('+w+','+w+','+w+')');g.addColorStop(1,'rgb('+e+','+e+','+e+')');x.fillStyle=g;
+      if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.fill();return;}
+      qpath(p.q);x.fill();
+      // streaks in the glass, across the piece at its own angle
+      x.save();qpath(p.q);x.clip();var ga=p.ga||0,sg=x.createLinearGradient(p.cx-Math.cos(ga)*8,p.cy-Math.sin(ga)*8,p.cx+Math.cos(ga)*8,p.cy+Math.sin(ga)*8);
+      sg.addColorStop(0,'rgba(0,0,0,.16)');sg.addColorStop(.5,'rgba(0,0,0,0)');sg.addColorStop(1,'rgba(0,0,0,.1)');x.fillStyle=sg;x.fillRect(p.cx-12,p.cy-12,24,24);
+      // now and then the glass-painter's brush
+      if(r()<0.22){x.strokeStyle='rgba(40,26,14,.32)';x.lineWidth=0.5+r()*0.6;x.beginPath();var a2=r()*6.28;x.moveTo(p.cx-Math.cos(a2)*4,p.cy-Math.sin(a2)*4);x.quadraticCurveTo(p.cx+(r()-.5)*5,p.cy+(r()-.5)*5,p.cx+Math.cos(a2)*4,p.cy+Math.sin(a2)*4);x.stroke();}
+      x.restore();
     });
+    // the lead between every piece
+    x.strokeStyle='#120d0a';x.lineWidth=1.25;x.lineJoin='round';
+    panes.forEach(function(p){if(p.t==='c'){x.beginPath();x.arc(p.x,p.y,p.r,0,6.2832);x.stroke();}});
+    [LL,RR].forEach(function(l){x.save();lancetPath(x,l);x.clip();panes.forEach(function(p){if(p.t!=='c'&&p.l===l){qpath(p.q);x.stroke();}});x.restore();});
     // mottling and grain
     x.setTransform(1,0,0,1,0,0);
     var img=x.getImageData(0,0,tex.width,tex.height),d=img.data,W2=tex.width;
@@ -1741,6 +1762,29 @@ var V=(function(){
       var m=cells[ci];if(m==null)m=cells[ci]=0.9+r()*0.1;var gr=m*(0.94+r()*0.06);
       if(d[i+3]===0)continue;d[i]*=gr;d[i+1]*=gr;d[i+2]*=gr;}
     x.putImageData(img,0,0);
+    makeStone(set,sc);
+  }
+  // carved stone: a dark under-edge, the face, a lit upper edge — and its soft shadow on the glass behind
+  function makeStone(set,sc){
+    var st=set.stone||(set.stone=document.createElement('canvas'));st.width=set.glass.width;st.height=set.glass.height;
+    var k=DPR*sc,x=st.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,st.width,st.height);x.setTransform(k,0,0,k,0,0);x.lineCap='round';x.lineJoin='round';
+    var parts=[[function(){lancetPath(x,LL);},6],[function(){lancetPath(x,RR);},6],[function(){x.beginPath();x.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);},6],
+      [function(){x.beginPath();x.moveTo(89,430);x.lineTo(89,682);x.moveTo(211,430);x.lineTo(211,682);},2.4]];
+    function cross(){var rr=ROSE.r-1,aw=9.5;x.beginPath();
+      x.moveTo(ROSE.x-aw,ROSE.y-rr);x.lineTo(ROSE.x+aw,ROSE.y-rr);x.lineTo(ROSE.x+aw*0.42,ROSE.y-aw*0.42);x.lineTo(ROSE.x+rr,ROSE.y-aw);x.lineTo(ROSE.x+rr,ROSE.y+aw);x.lineTo(ROSE.x+aw*0.42,ROSE.y+aw*0.42);
+      x.lineTo(ROSE.x+aw,ROSE.y+rr);x.lineTo(ROSE.x-aw,ROSE.y+rr);x.lineTo(ROSE.x-aw*0.42,ROSE.y+aw*0.42);x.lineTo(ROSE.x-rr,ROSE.y+aw);x.lineTo(ROSE.x-rr,ROSE.y-aw);x.lineTo(ROSE.x-aw*0.42,ROSE.y-aw*0.42);x.closePath();}
+    // shadows first, softened
+    x.save();x.translate(2,3);x.strokeStyle='rgba(0,0,0,.6)';parts.forEach(function(q){x.lineWidth=q[1]*1.6;q[0]();x.stroke();});x.fillStyle='rgba(0,0,0,.55)';cross();x.fill();x.restore();
+    var w=st.width,h=st.height,sm=document.createElement('canvas');sm.width=Math.max(1,w>>2);sm.height=Math.max(1,h>>2);sm.getContext('2d').drawImage(st,0,0,sm.width,sm.height);
+    x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,w,h);x.imageSmoothingQuality='high';x.drawImage(sm,0,0,w,h);x.setTransform(k,0,0,k,0,0);
+    // then the carving
+    function carve(fn,lw){x.strokeStyle='#26221e';x.lineWidth=lw*1.2;fn();x.stroke();x.strokeStyle='#625d56';x.lineWidth=lw*0.85;fn();x.stroke();
+      x.save();x.translate(-lw*0.18,-lw*0.24);x.strokeStyle='rgba(170,160,145,.45)';x.lineWidth=lw*0.26;fn();x.stroke();x.restore();}
+    parts.forEach(function(q){carve(q[0],q[1]);});
+    x.fillStyle='#26221e';cross();x.fill();x.save();x.beginPath();cross();x.clip();x.fillStyle='#655f58';x.translate(0.6,0.8);cross();x.fill();x.restore();
+    x.save();x.translate(-0.5,-0.6);x.strokeStyle='rgba(170,160,145,.4)';x.lineWidth=0.8;cross();x.stroke();x.restore();
+    x.beginPath();x.arc(ROSE.x,ROSE.y,5,0,6.2832);x.fillStyle='#736d65';x.fill();
+    carve(function(){lancetPath(x,OUT);},10);
   }
   // the beam: a soft, semi-defined fall of light to the floor, ending in the window's own shape
   var beam=null;
@@ -2067,29 +2111,21 @@ var V=(function(){
       acc[0]+=c[0]*b;acc[1]+=c[1]*b;acc[2]+=c[2]*b;wsum+=b;
       g.fillStyle='rgb('+(r|0)+','+(gg|0)+','+(bb|0)+')';
     }
-    g.strokeStyle='#100c09';g.lineWidth=2;
     [LL,RR].forEach(function(l){g.save();lancetPath(g,l);g.clip();
-      for(var i=0;i<panes.length;i++){var p=panes[i];if(p.l!==l)continue;shade(p);g.fillRect(p.x,p.y,p.w,p.h);g.strokeRect(p.x,p.y,p.w,p.h);}
+      for(var i=0;i<panes.length;i++){var p=panes[i];if(p.l!==l)continue;shade(p);var q=p.q;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(var k2=1;k2<q.length;k2++)g.lineTo(q[k2][0],q[k2][1]);g.closePath();g.fill();}
       g.restore();});
-    panes.forEach(function(p){if(p.t!=='c')return;shade(p);g.beginPath();g.arc(p.x,p.y,p.r,0,6.2832);g.fill();g.stroke();});
+    panes.forEach(function(p){if(p.t!=='c')return;shade(p);g.beginPath();g.arc(p.x,p.y,p.r,0,6.2832);g.fill();});
     if(skyS.night>0.05){g.save();lancetPath(g,LL);lancetPath(g,RR);g.clip();g.fillStyle='#fff';
       stars.forEach(function(st){var a=skyS.night*(0.25+0.45*(0.5+0.5*Math.sin(st.ph+t*st.sp)))*(1-endDark*0.5);g.globalAlpha=a;g.beginPath();g.arc(st.x,st.y,st.r,0,6.2832);g.fill();});g.restore();g.globalAlpha=1;}
     if(S.texture!==false){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='multiply';g.drawImage(tex,0,0);g.restore();}
-    g.lineWidth=6;g.strokeStyle='#6f6a63';lancetPath(g,LL);g.stroke();lancetPath(g,RR);g.stroke();g.beginPath();g.arc(ROSE.x,ROSE.y,ROSE.r,0,6.2832);g.stroke();
-    // a stone cross in the rose: the light pours around it
-    g.fillStyle='#6f6a63';var rr=ROSE.r-1,aw=9.5;
-    g.beginPath();
-    g.moveTo(ROSE.x-aw,ROSE.y-rr);g.lineTo(ROSE.x+aw,ROSE.y-rr);g.lineTo(ROSE.x+aw*0.42,ROSE.y-aw*0.42);g.lineTo(ROSE.x+rr,ROSE.y-aw);g.lineTo(ROSE.x+rr,ROSE.y+aw);g.lineTo(ROSE.x+aw*0.42,ROSE.y+aw*0.42);
-    g.lineTo(ROSE.x+aw,ROSE.y+rr);g.lineTo(ROSE.x-aw,ROSE.y+rr);g.lineTo(ROSE.x-aw*0.42,ROSE.y+aw*0.42);g.lineTo(ROSE.x-rr,ROSE.y+aw);g.lineTo(ROSE.x-rr,ROSE.y-aw);g.lineTo(ROSE.x-aw*0.42,ROSE.y-aw*0.42);g.closePath();g.fill();
-    g.strokeStyle='#4e4a45';g.lineWidth=1;g.stroke();
-    g.beginPath();g.arc(ROSE.x,ROSE.y,5,0,6.2832);g.fillStyle='#7a746c';g.fill();
-    g.lineWidth=10;g.strokeStyle='#7a746c';lancetPath(g,OUT);g.stroke();
-    g.lineWidth=3;g.strokeStyle='#26221e';g.beginPath();g.moveTo(89,430);g.lineTo(89,682);g.moveTo(211,430);g.lineTo(211,682);g.stroke();
+    // carved stone over the glass, with the shadows it throws: drawn once, laid on each frame
+    if(set.stone){g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(set.stone,0,0);g.restore();}
     }
     paint(C,geo.s);if(geo.side)paint(SD,geo.side.s);
     var W3=wins();function glassAll(){W3.forEach(function(wn){if(wn.mirror){x.save();x.translate(wn.x+wn.w,wn.y);x.scale(-1,1);x.drawImage(wn.set.glass,0,0,wn.w,wn.h);x.restore();}else x.drawImage(wn.set.glass,wn.x,wn.y,wn.w,wn.h);});}
 
     // the colour of the light leaving the window: the glass it actually shines through
+    if(!(wsum>0)){acc=[200,180,150];wsum=1;}
     var lc=[acc[0]/wsum,acc[1]/wsum,acc[2]/wsum],mx=Math.max(lc[0],lc[1],lc[2],1);
     lc=lc.map(function(x){return Math.min(255,x/mx*235);});
     if(skyS.night>0)lc=mixc(lc,[255,170,90],0.55*skyS.night);
@@ -2506,121 +2542,168 @@ var Rooms=(function(){
   var PAL={vetus:['#1d3a7c','#2a58b0','#3a7bd0','#21497f','#5b3a8c','#2b6c6a','#8e2626','#c79d44','#183062'],
            novum:['#9c1c1c','#c4432a','#d8962a','#e6c157','#7a1f3d','#2f5fae','#5e2a6a','#2e7448','#b8331f']};
   function hexrgb(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
-  // the rose as a flower: twelve petals of glass, each in three pieces; glass between the petals; foils; a six-lobed heart.
-  // v: which voice of the chord each part answers to, as the nave's window does by height
-  var PET_W=Math.PI/12*0.92,BANDS=[[0.2,0.43],[0.43,0.63],[0.63,0.86]];
+  // the rose as a flower, made the old way: hundreds of small hand-cut pieces of uneven glass in lead,
+  // twelve carved stone petals over them, round foils between the tips, a six-lobed heart, all set deep in the wall.
+  var PET_W=Math.PI/12*0.92;
+  var FAM={vetus:{a:['#1d3a7c','#2a58b0','#3a7bd0','#183062','#264f9a'],b:['#4f2f80','#2b6c6a','#5a3a8c','#3d2a6e','#b8913e'],g:['#183062','#1d3a7c','#22356e','#7e2222','#132a5a'],heart:['#c79d44','#e0b85a'],foil:['#8e2626','#c79d44','#2b6c6a','#2a58b0']},
+           novum:{a:['#9c1c1c','#b8301f','#7a1414','#c4432a','#8e1f2a'],b:['#d8962a','#c47f1e','#e6c157','#b8691a'],g:['#1f3f8a','#2f5fae','#1d4a52','#2e7448'],heart:['#e6c157','#f0d27a'],foil:['#2f5fae','#e6c157','#9c1c1c','#2e7448']}};
   function petalPath(x,i,cx,cy,R){
     var th=i*Math.PI/6,w=PET_W;function P(rr,aa){return [cx+Math.cos(aa)*rr*R,cy+Math.sin(aa)*rr*R];}
     var p0=P(0.205,th),l1=P(0.36,th-w*1.25),l2=P(0.7,th-w*0.95),tip=P(0.83,th),r1=P(0.36,th+w*1.25),r2=P(0.7,th+w*0.95);
     x.moveTo(p0[0],p0[1]);x.bezierCurveTo(l1[0],l1[1],l2[0],l2[1],tip[0],tip[1]);x.bezierCurveTo(r2[0],r2[1],r1[0],r1[1],p0[0],p0[1]);x.closePath();
   }
-  function rosePanes(seed){
-    var r=rnd(seed),P=[],i,j;
-    for(i=0;i<12;i++)for(j=0;j<3;j++)P.push({t:'g',a:(i+0.5)*Math.PI/6,band:j,v:j===0?2:1});
-    for(i=0;i<12;i++)for(j=0;j<3;j++)P.push({t:'p',i:i,a:i*Math.PI/6,band:j,v:j===0?2:1});
-    for(i=0;i<12;i++)P.push({t:'c',r:0.78,a:(i+0.5)*Math.PI/6,rr:0.07,v:0});
-    for(i=0;i<24;i++)P.push({t:'c',r:0.865,a:(i+0.5)*Math.PI/12,rr:0.052,v:0});
-    for(i=0;i<6;i++)P.push({t:'c',r:0.1,a:i*Math.PI/3,rr:0.075,v:3});
-    P.push({t:'c',r:0,a:0,rr:0.06,v:3});
-    P.forEach(function(p){p.c=r();p.ph=r()*6.28;p.sp=.12+r()*.3;
-      if(p.t==='c'){p.cx=Math.cos(p.a)*p.r;p.cy=Math.sin(p.a)*p.r;}else{var rm=(BANDS[p.band][0]+BANDS[p.band][1])/2;p.cx=Math.cos(p.a)*rm;p.cy=Math.sin(p.a)*rm;}});
-    // the petals and the glass beside them draw from different ends of the palette, so the flower stands out
-    P.forEach(function(p){if(p.t==='p')p.c=0.45+0.55*p.c;else if(p.t==='g')p.c=0.55*p.c;});
-    return P;
+  function shade(hex,k){var c=hexrgb(hex);return [Math.min(255,c[0]*k),Math.min(255,c[1]*k),Math.min(255,c[2]*k)];}
+  function css(c,m){return 'rgb('+Math.round(Math.min(255,c[0]*m))+','+Math.round(Math.min(255,c[1]*m))+','+Math.round(Math.min(255,c[2]*m))+')';}
+  // the pieces of glass: a jittered net of small cells, each belonging to a petal or to the ground between
+  function rosePieces(side,R,b2){
+    var r=rnd(side==='vetus'?31:57),F=FAM[side],rads=[0.2,0.3,0.4,0.48,0.56,0.64,0.72,0.8,0.86],NA=96,V=[],i,j;
+    for(i=0;i<rads.length;i++){V.push([]);for(j=0;j<NA;j++){var edge=i===0||i===rads.length-1,ja=edge?0:(r()-.5)*0.55*(2*Math.PI/NA),jr=edge?0:(r()-.5)*0.022;
+      var a=j*2*Math.PI/NA+ja,rr=rads[i]+jr;V[i].push([b2+Math.cos(a)*rr*R,b2+Math.sin(a)*rr*R]);}}
+    var probe=mk(4,4).getContext('2d'),pieces=[];
+    for(i=0;i<rads.length-1;i++)for(j=0;j<NA;j++){
+      var q=[V[i][j],V[i][(j+1)%NA],V[i+1][(j+1)%NA],V[i+1][j]],cx2=(q[0][0]+q[1][0]+q[2][0]+q[3][0])/4,cy2=(q[0][1]+q[1][1]+q[2][1]+q[3][1])/4;
+      var ang=Math.atan2(cy2-b2,cx2-b2),k=Math.round(((ang+2*Math.PI)%(2*Math.PI))/(Math.PI/6))%12,inP=false;
+      probe.beginPath();petalPath(probe,k,b2,b2,R);inP=probe.isPointInPath(cx2,cy2);
+      var fam=inP?(k%2?F.b:F.a):F.g,col=shade(fam[Math.floor(r()*fam.length)],0.88+r()*0.24);
+      var tr=r()<0.06?0.35+r()*0.2:0.62+r()*0.48;
+      pieces.push({q:q,cx:cx2,cy:cy2,c:col,t:tr,petal:inP,ga:r()*6.28,gk:0.8+r()*0.35});
+    }
+    // foils between the petal tips, a ring of small ones at the edge, the six-lobed heart
+    var foils=[];for(i=0;i<12;i++){var a2=(i+0.5)*Math.PI/6;foils.push({x:b2+Math.cos(a2)*0.75*R,y:b2+Math.sin(a2)*0.75*R,r:0.068*R,c:shade(F.foil[i%F.foil.length],0.95+r()*0.15),t:0.7+r()*0.4});}
+    for(i=0;i<24;i++){a2=(i+0.5)*Math.PI/12;foils.push({x:b2+Math.cos(a2)*0.895*R,y:b2+Math.sin(a2)*0.895*R,r:0.034*R,c:shade(F.foil[(i+1)%F.foil.length],0.95+r()*0.15),t:0.7+r()*0.4});}
+    for(i=0;i<6;i++){a2=i*Math.PI/3;foils.push({x:b2+Math.cos(a2)*0.1*R,y:b2+Math.sin(a2)*0.1*R,r:0.075*R,c:shade(F.heart[i%2],0.9+r()*0.2),t:0.8+r()*0.3,heart:1});}
+    return {pieces:pieces,foils:foils};
   }
-  function paneFill(x,p,cx,cy,R){
-    if(p.t==='c'){x.beginPath();x.arc(cx+p.cx*R,cy+p.cy*R,p.rr*R,0,6.2832);x.fill();return;}
-    var b=BANDS[p.band],a0=p.a-Math.PI/12,a1=p.a+Math.PI/12;
-    if(p.t==='p'){x.save();x.beginPath();petalPath(x,p.i,cx,cy,R);x.clip();}
-    x.beginPath();x.arc(cx,cy,b[1]*R,a0-0.01,a1+0.01);x.arc(cx,cy,b[0]*R,a1+0.01,a0-0.01,true);x.closePath();x.fill();
-    if(p.t==='p')x.restore();
+  // paint all the glass once, at a given strength: each piece streaked and uneven, some nearly opaque, with a little painted line-work
+  function paintGlass(G,R,b2,box,m,hot){
+    var c=mk(box*DPR,box*DPR),x=c.getContext('2d');x.scale(DPR,DPR);var r=rnd(77);
+    function piece(c0,t,pathFn,ga,gk){var k=m*t;x.save();pathFn();x.clip();
+      var g=x.createLinearGradient(b2+Math.cos(ga)*R*0.06,b2+Math.sin(ga)*R*0.06,b2-Math.cos(ga)*R*0.06,b2-Math.sin(ga)*R*0.06);
+      var lo=hot?mix(c0,0.45):c0,hi=hot?mix(c0,0.6):c0;g.addColorStop(0,css(lo,k*0.78*gk));g.addColorStop(1,css(hi,k*1.12));
+      x.fillStyle=g;x.fillRect(b2-R,b2-R,2*R,2*R);x.restore();}
+    function mix(c0,e){return [c0[0]+(255-c0[0])*e,c0[1]+(255-c0[1])*e,c0[2]+(255-c0[2])*e];}
+    x.beginPath();x.arc(b2,b2,R*0.2,0,6.2832);x.fillStyle=css(G.foils[36].c,m*0.85);x.fill();
+    G.pieces.forEach(function(p){piece(p.c,p.t,function(){x.beginPath();x.moveTo(p.q[0][0],p.q[0][1]);for(var i=1;i<4;i++)x.lineTo(p.q[i][0],p.q[i][1]);x.closePath();},p.ga,p.gk);});
+    // the band of stone behind the outer foils
+    x.beginPath();x.arc(b2,b2,R*0.94,0,6.2832);x.arc(b2,b2,R*0.86,0,6.2832,true);x.fillStyle='#14110e';x.fill();
+    G.foils.forEach(function(f){piece(f.c,f.t,function(){x.beginPath();x.arc(f.x,f.y,f.r,0,6.2832);},r()*6.28,0.9);});
+    // texture: each piece slightly pillowed, the whole sheet grainy and seeded with tiny bubbles
+    x.globalCompositeOperation='multiply';x.globalAlpha=hot?.35:.6;x.fillStyle=x.createPattern(GRAIN,'repeat');x.fillRect(b2-R,b2-R,2*R,2*R);
+    x.globalAlpha=hot?.25:.45;x.drawImage(MOTTLE,b2-R,b2-R,2*R,2*R);
+    // grisaille: the glass-painter's dark brushwork, faint, on the petals
+    x.globalAlpha=hot?.12:.28;x.strokeStyle='#2a1a0e';x.lineCap='round';
+    G.pieces.forEach(function(p){if(!p.petal||r()>0.35)return;x.lineWidth=0.5+r()*0.9;x.beginPath();var a=r()*6.28,l=R*0.03;x.moveTo(p.cx-Math.cos(a)*l,p.cy-Math.sin(a)*l);x.quadraticCurveTo(p.cx+(r()-.5)*l,p.cy+(r()-.5)*l,p.cx+Math.cos(a)*l,p.cy+Math.sin(a)*l);x.stroke();});
+    x.globalAlpha=1;x.globalCompositeOperation='source-over';
+    // lead between every piece
+    x.strokeStyle='#0d0a07';x.lineWidth=Math.max(0.7,R*0.007);x.lineJoin='round';
+    G.pieces.forEach(function(p){x.beginPath();x.moveTo(p.q[0][0],p.q[0][1]);for(var i=1;i<4;i++)x.lineTo(p.q[i][0],p.q[i][1]);x.closePath();x.stroke();});
+    G.foils.forEach(function(f){x.beginPath();x.arc(f.x,f.y,f.r,0,6.2832);x.stroke();});
+    x.globalCompositeOperation='destination-in';x.beginPath();x.arc(b2,b2,R*0.94,0,6.2832);x.fill();x.globalCompositeOperation='source-over';
+    return c;
+  }
+  // carved stone: a dark under-edge, the face, and a lit upper edge; and the shadow it throws onto the glass
+  function stone(x,pathFn,w,shadow){
+    if(shadow){x.save();x.translate(w*0.35,w*0.5);x.strokeStyle='rgba(0,0,0,.55)';x.lineWidth=w*1.5;pathFn();x.stroke();x.restore();return;}
+    x.strokeStyle='#211d19';x.lineWidth=w*1.18;pathFn();x.stroke();
+    x.strokeStyle='#4a453f';x.lineWidth=w*0.9;pathFn();x.stroke();
+    x.save();x.translate(-w*0.18,-w*0.22);x.strokeStyle='rgba(150,140,125,.42)';x.lineWidth=w*0.28;pathFn();x.stroke();x.restore();
   }
   function buildTransept(side){
     if(!W)return;
     var k=H/844,wide=W>H*1.2,R=Math.min(W*0.32,H*(wide?0.24:0.155)),cx=W/2,cy=Math.round(80*k+R+R*0.25);
-    var pal=PAL[side].map(hexrgb),P=rosePanes(side==='vetus'?31:57);
-    P.forEach(function(p){p.rgb=pal[Math.floor(p.c*pal.length)];});
-    TR={side:side,R:R,cx:cx,cy:cy,k:k,panes:P,acc:[200,180,150]};
+    TR={side:side,R:R,cx:cx,cy:cy,k:k};
     // the wall: the nave's own bricks, pillars and shadow
     var st=mk(W*DPR,H*DPR),x=st.getContext('2d');x.scale(DPR,DPR);x.fillStyle='#060505';x.fillRect(0,0,W,H);
     var seed=3;function rr2(){seed=(seed*16807)%2147483647;return seed/2147483647;}
     for(var row=0;row*22<H+22;row++){var off=row%2?-29:0;for(var bx=off;bx<W;bx+=58){var g=22+Math.floor(rr2()*13);x.fillStyle='rgb('+g+','+(g-3)+','+(g-6)+')';x.fillRect(bx+1,row*22+1,56,20);}}
+    // the embrasure: the window sits deep in the wall, its splayed stone catching a little light
+    var e=x.createRadialGradient(cx,cy,R*0.98,cx,cy,R*1.16);e.addColorStop(0,'#16130f');e.addColorStop(.45,'#2c2721');e.addColorStop(.8,'#1a1713');e.addColorStop(1,'rgba(10,9,8,0)');
+    x.fillStyle=e;x.beginPath();x.arc(cx,cy,R*1.16,0,6.2832);x.fill();
     TR.still=st;
     var pw=Math.max(40,Math.round(W*0.13)),pl=mk(pw*DPR,H*DPR),px2=pl.getContext('2d');px2.scale(DPR,DPR);
     var pg=px2.createLinearGradient(0,0,pw,0);[[0,'#020202'],[.18,'#13110e'],[.34,'#27231f'],[.44,'#38332e'],[.56,'#181512'],[.62,'#0a0908'],[.7,'#1c1916'],[.79,'#2f2b26'],[.9,'#13110e'],[1,'#020202']].forEach(function(q){pg.addColorStop(q[0],q[1]);});
     px2.fillStyle=pg;px2.fillRect(0,0,pw,H);var tg=px2.createLinearGradient(0,0,0,140);tg.addColorStop(0,'rgba(0,0,0,1)');tg.addColorStop(1,'rgba(0,0,0,0)');px2.fillStyle=tg;px2.fillRect(0,0,pw,140);
     TR.pillar=pl;TR.pw=pw;
     var vg=mk(W*DPR,H*DPR),vx=vg.getContext('2d');vx.scale(DPR,DPR);var f2=vx.createLinearGradient(0,H-270,0,H);f2.addColorStop(0,'rgba(3,3,3,0)');f2.addColorStop(.6,'rgba(3,3,3,.86)');f2.addColorStop(1,'#030303');vx.fillStyle=f2;vx.fillRect(0,H-270,W,270);TR.vign=vg;
-    // the glass, repainted each frame, and what stays still over it: the panes' hand-made texture and the stone
-    var box=Math.ceil(2*R+6);TR.box=box;TR.glass=mk(box*DPR,box*DPR);
-    var tex=mk(box*DPR,box*DPR),t2=tex.getContext('2d');t2.scale(DPR,DPR);var r3=rnd(11),b2=box/2;
-    t2.fillStyle='#fff';t2.fillRect(0,0,box,box);
-    P.forEach(function(p){var px3=b2+p.cx*R+(r3()-.5)*R*0.02,py3=b2+p.cy*R+(r3()-.5)*R*0.02,rad=R*(p.t==='c'?p.rr*1.1:0.12);
-      var e=150+Math.floor(r3()*40),gr=t2.createRadialGradient(px3,py3,rad*0.1,px3,py3,rad*1.1);gr.addColorStop(0,'#fff');gr.addColorStop(1,'rgb('+e+','+e+','+e+')');
-      t2.fillStyle=gr;paneFill(t2,p,b2,b2,R);});
-    t2.globalCompositeOperation='multiply';t2.globalAlpha=.6;t2.fillStyle=t2.createPattern(GRAIN,'repeat');t2.fillRect(0,0,box,box);
-    t2.globalCompositeOperation='destination-in';t2.globalAlpha=1;t2.beginPath();t2.arc(b2,b2,R*0.94,0,6.2832);t2.fill();
-    TR.tex=tex;
-    var tr=mk(box*DPR,box*DPR),tt=tr.getContext('2d');tt.scale(DPR,DPR);
-    // the lead between the pieces of glass
-    tt.strokeStyle='#100c09';tt.lineWidth=Math.max(0.8,R*0.008);
-    for(var q=0;q<12;q++){var aa=(q+0.5)*Math.PI/6;tt.beginPath();tt.moveTo(b2+Math.cos(aa)*0.2*R,b2+Math.sin(aa)*0.2*R);tt.lineTo(b2+Math.cos(aa)*0.93*R,b2+Math.sin(aa)*0.93*R);tt.stroke();}
-    [0.43,0.63].forEach(function(rr){tt.beginPath();tt.arc(b2,b2,rr*R,0,6.2832);tt.stroke();});
-    // the tracery: a flower — twelve stone petals from a six-lobed heart, round foils between their tips
-    var lw=R*0.022;tt.strokeStyle='#45413c';tt.lineCap='round';tt.lineJoin='round';
-    tt.lineWidth=lw*1.2;tt.beginPath();tt.arc(b2,b2,0.2*R,0,6.2832);tt.stroke();
-    tt.lineWidth=lw*1.15;for(var i=0;i<12;i++){tt.beginPath();petalPath(tt,i,b2,b2,R);tt.stroke();}
-    tt.lineWidth=lw*0.75;for(i=0;i<12;i++){var a2=(i+0.5)*Math.PI/6;tt.beginPath();tt.arc(b2+Math.cos(a2)*0.78*R,b2+Math.sin(a2)*0.78*R,0.07*R,0,6.2832);tt.stroke();}
-    tt.lineWidth=lw*0.7;for(i=0;i<24;i++){a2=(i+0.5)*Math.PI/12;tt.beginPath();tt.arc(b2+Math.cos(a2)*0.865*R,b2+Math.sin(a2)*0.865*R,0.052*R,0,6.2832);tt.stroke();}
-    // the six-lobed heart, with a small cross
-    tt.lineWidth=lw*0.8;for(i=0;i<6;i++){a2=i*Math.PI/3;tt.beginPath();tt.arc(b2+Math.cos(a2)*0.1*R,b2+Math.sin(a2)*0.1*R,0.075*R,a2-Math.PI*0.62,a2+Math.PI*0.62);tt.stroke();}
-    tt.fillStyle='#4a4540';var aw=R*0.018,rc=R*0.09;tt.fillRect(b2-aw,b2-rc,aw*2,rc*2);tt.fillRect(b2-rc,b2-aw,rc*2,aw*2);
-    tt.strokeStyle='#4a4540';tt.lineWidth=R*0.07;tt.beginPath();tt.arc(b2,b2,R*0.965,0,6.2832);tt.stroke();
-    tt.strokeStyle='rgba(120,112,100,.35)';tt.lineWidth=R*0.012;tt.beginPath();tt.arc(b2,b2,R*0.995,Math.PI*1.05,Math.PI*1.95);tt.stroke();
-    tt.strokeStyle='#2e2a26';tt.lineWidth=1;tt.beginPath();tt.arc(b2,b2,R*0.93,0,6.2832);tt.stroke();
+    // the glass, painted once dim, once lit, once burning; each frame only moves the light between them
+    var box=Math.ceil(2*R+6),b2=box/2;TR.box=box;
+    var G=rosePieces(side,R,b2);TR.G=G;
+    TR.dim=paintGlass(G,R,b2,box,0.17,false);TR.lit=paintGlass(G,R,b2,box,1.0,false);TR.hot=paintGlass(G,R,b2,box,1.0,true);
+    TR.glass=mk(box*DPR,box*DPR);TR.tmp=mk(box*DPR,box*DPR);TR.mask=mk(Math.ceil(box/3),Math.ceil(box/3));
+    var acc=[0,0,0],n=0;G.pieces.forEach(function(p){acc[0]+=p.c[0]*p.t;acc[1]+=p.c[1]*p.t;acc[2]+=p.c[2]*p.t;n++;});var mx=Math.max(acc[0],acc[1],acc[2]);TR.acc=acc.map(function(v){return Math.round(v/mx*235);});
+    // the stone over the glass: shadows first, then the carving
+    var tr=mk(box*DPR,box*DPR),tt=tr.getContext('2d');tt.scale(DPR,DPR);tt.lineCap='round';tt.lineJoin='round';
+    var lw=R*0.026,parts=[];
+    parts.push([function(){tt.beginPath();tt.arc(b2,b2,0.2*R,0,6.2832);},lw*1.1]);
+    for(var i=0;i<12;i++)(function(i){parts.push([function(){tt.beginPath();petalPath(tt,i,b2,b2,R);},lw]);})(i);
+    G.foils.forEach(function(f){if(!f.heart)parts.push([function(){tt.beginPath();tt.arc(f.x,f.y,f.r,0,6.2832);},f.r>0.05*R?lw*0.7:lw*0.5]);});
+    for(i=0;i<6;i++)(function(i){var a2=i*Math.PI/3;parts.push([function(){tt.beginPath();tt.arc(b2+Math.cos(a2)*0.1*R,b2+Math.sin(a2)*0.1*R,0.075*R,a2-Math.PI*0.62,a2+Math.PI*0.62);},lw*0.65]);})(i);
+    parts.push([function(){tt.beginPath();tt.arc(b2,b2,0.86*R,0,6.2832);},lw*0.8]);
+    tt.save();tt.beginPath();tt.arc(b2,b2,R*0.94,0,6.2832);tt.clip();parts.forEach(function(q){stone(tt,q[0],q[1],true);});tt.restore();
+    var sh=soften(tr,4);tt.setTransform(1,0,0,1,0,0);tt.clearRect(0,0,tr.width,tr.height);tt.drawImage(sh,0,0);tt.scale(DPR,DPR);
+    parts.forEach(function(q){stone(tt,q[0],q[1],false);});
+    // the heart's small cross, and the deep rim of the window, carved
+    tt.fillStyle='#4a453f';var aw=R*0.016,rc=R*0.085;tt.fillRect(b2-aw,b2-rc,aw*2,rc*2);tt.fillRect(b2-rc,b2-aw,rc*2,aw*2);
+    var rg=tt.createRadialGradient(b2,b2,R*0.93,b2,b2,R*1.0);rg.addColorStop(0,'#1b1814');rg.addColorStop(.3,'#4d4741');rg.addColorStop(.6,'#3a352f');rg.addColorStop(1,'#1d1a16');
+    tt.fillStyle=rg;tt.beginPath();tt.arc(b2,b2,R*1.0,0,6.2832);tt.arc(b2,b2,R*0.935,0,6.2832,true);tt.fill();
+    tt.strokeStyle='rgba(160,150,132,.35)';tt.lineWidth=R*0.008;tt.beginPath();tt.arc(b2-R*0.004,b2-R*0.006,R*0.985,Math.PI*1.05,Math.PI*1.95);tt.stroke();
+    // a soft inner shadow where the glass meets the deep stone
+    var is=tt.createRadialGradient(b2,b2,R*0.78,b2,b2,R*0.94);is.addColorStop(0,'rgba(0,0,0,0)');is.addColorStop(1,'rgba(0,0,0,.45)');tt.fillStyle=is;tt.beginPath();tt.arc(b2,b2,R*0.94,0,6.2832);tt.fill();
+    // the halo, painted once in the glass's own colour (with a little grain against banding); each frame only sets how strongly it shines
+    var HR=R*3.2,hs=0.5,hc=mk(2*HR*hs,2*HR*hs),hx=hc.getContext('2d');hx.scale(hs,hs);var rgb0=TR.acc.join(',');
+    hx.globalCompositeOperation='lighter';
+    [[1.6,0.7],[2.4,0.6],[3.2,0.6]].forEach(function(h){var r0=R*0.85,r1=R*h[0],gr=hx.createRadialGradient(HR,HR,r0,HR,HR,r1);
+      for(var q=0;q<=8;q++){var u=q/8,a3=0.55*1.4*h[1]*Math.pow(1-u,2.2);gr.addColorStop(u,'rgba('+rgb0+','+Math.min(1,a3).toFixed(4)+')');}
+      hx.fillStyle=gr;hx.fillRect(HR-r1,HR-r1,r1*2,r1*2);});
+    hx.globalCompositeOperation='destination-out';hx.globalAlpha=0.08;hx.fillStyle=hx.createPattern(GRAIN,'repeat');hx.fillRect(0,0,2*HR,2*HR);hx.globalAlpha=1;
+    TR.halo=hc;TR.HR=HR;
     TR.tracery=tr;TR.bloom=mk(Math.max(8,box/4),Math.max(8,box/4));TR.bloom2=mk(Math.max(4,box/12),Math.max(4,box/12));
-    // sanctuary lamps hanging either side of the rose, and incense hanging in the light
-    TR.lamps=[[cx-R*1.18,cy-R*0.15],[cx+R*1.18,cy-R*0.15]].filter(function(l){return l[0]>pw*0.9&&l[0]<W-pw*0.9;});
+    // sanctuary lamps either side of the rose, and incense hanging in the light
+    TR.lamps=[[cx-R*1.25,cy-R*0.15],[cx+R*1.25,cy-R*0.15]].filter(function(l){return l[0]>pw*0.9&&l[0]<W-pw*0.9;});
     var r=rnd(3);TR.motes=[];for(var m=0;m<18;m++)TR.motes.push({x:cx+(r()-.5)*2.4*R,y:cy-R+r()*R*2.6,s:(0.8+r()*1.2)*k,d:10+r()*8,o:r()*18});
     TR.haze=[];for(m=0;m<6;m++)TR.haze.push({x:cx+(r()-.5)*R*2,d:40+r()*30,o:r()*70,s:R*(0.5+r()*0.5)});
-    TR.light={a:0,rad:0.4};
-    var lb=$('lectio');lb.style.top=Math.round(cy+R+20*k)+'px';lb.style.height=Math.max(90,Math.round((H-218)-(cy+R+20*k)))+'px';
+    var lb=$('lectio');lb.style.top=Math.round(cy+R+R*0.16+20*k)+'px';lb.style.height=Math.max(90,Math.round((H-84)-(cy+R+R*0.16+20*k)))+'px';
     $('transeptLabel').textContent=side==='vetus'?'vetus testamentum':'novum testamentum';
     var nb=$('toNavisSide');nb.textContent=side==='vetus'?'navis →':'← navis';nb.classList.toggle('lefttop',side==='novum');nb.setAttribute('aria-label',side==='vetus'?'Back to the nave, to the right':'Back to the nave, to the left');
     fitPhrase();
   }
-  // the rose's glass, lit pane by pane exactly as the nave's window is lit by Orgel
+  // each frame: the light the organ makes, laid over the glass as a mask — overall swell, a wandering bright patch,
+  // each ring answering its voice of the chord, the heart flaring on a resolution — exactly the nave's recipe
   function paintRose(t,g,s,b){
-    var R=TR.R,box=TR.box,b2=box/2,gc=TR.glass,x=gc.getContext('2d'),L=g.L||0.2,pv=g.pv||[0,0,0,0,0],rp=g.rp||0,wind=g.wind||0,end=g.end||0;
-    // where the light falls on the glass wanders slowly round the wheel and toward the heart on each homecoming
-    var la=t*2*Math.PI/96,lr=0.5-0.35*Math.min(1,b+rp),lx2=Math.cos(la)*lr,ly2=Math.sin(la)*lr,ls=0.26+0.18*L;
-    x.setTransform(DPR,0,0,DPR,0,0);x.clearRect(0,0,box,box);
-    x.beginPath();x.arc(b2,b2,R*0.94,0,6.2832);x.fillStyle='#0b0a08';x.fill();
-    var acc=[0,0,0],ws=0;
-    TR.panes.forEach(function(p){
-      var dx=p.cx-lx2,dy=p.cy-ly2,f=Math.exp(-(dx*dx+dy*dy)/(2*ls*ls));
-      var br=0.1+L*(0.32+1.25*f)+0.14*pv[p.v]+(p.v===0?0.1*pv[4]:0)+(p.v===3?0.16*rp:0)+0.05*Math.sin(p.ph+t*p.sp)+0.025*wind*L+0.3*b*L;
-      br*=1-0.94*end;var c=p.rgb,rr,gg,bb;
-      if(br<=1){rr=c[0]*br;gg=c[1]*br;bb=c[2]*br;}else{var e=Math.min(.55,(br-1)*.45);rr=c[0]+(255-c[0])*e;gg=c[1]+(255-c[1])*e;bb=c[2]+(255-c[2])*e;}
-      acc[0]+=c[0]*br;acc[1]+=c[1]*br;acc[2]+=c[2]*br;ws+=br;
-      x.fillStyle='rgb('+(rr|0)+','+(gg|0)+','+(bb|0)+')';paneFill(x,p,b2,b2,R);});
-    x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='multiply';x.drawImage(TR.tex,0,0);x.globalCompositeOperation='source-over';x.drawImage(TR.tracery,0,0);
-    var lc=[acc[0]/ws,acc[1]/ws,acc[2]/ws],mx=Math.max(lc[0],lc[1],lc[2],1);TR.acc=lc.map(function(v){return Math.min(255,Math.round(v/mx*235));});
+    var R=TR.R,box=TR.box,b2=box/2,L=g.L||0.2,pv=g.pv||[0,0,0,0,0],rp=g.rp||0,end=g.end||0,wind=g.wind||0;
+    var M=TR.mask,mx=M.getContext('2d'),ms=M.width/box;
+    var la=t*2*Math.PI/96,lr=0.5-0.35*Math.min(1,b+rp),lpx=(b2+Math.cos(la)*lr*R)*ms,lpy=(b2+Math.sin(la)*lr*R)*ms,ls=(0.26+0.18*L)*R*ms;
+    mx.setTransform(1,0,0,1,0,0);mx.globalCompositeOperation='copy';
+    var base=clamp((L*0.32+0.025*wind*L+0.3*b*L)*(1-0.94*end),0,1);mx.fillStyle='rgba(255,255,255,'+base.toFixed(3)+')';mx.fillRect(0,0,M.width,M.height);
+    mx.globalCompositeOperation='lighter';
+    var sp=mx.createRadialGradient(lpx,lpy,0,lpx,lpy,ls*2.4);var sa=L*1.25*(1-0.94*end);
+    for(var q=0;q<=6;q++){var u=q/6;sp.addColorStop(u,'rgba(255,255,255,'+clamp(sa*Math.exp(-u*u*2.9),0,1).toFixed(3)+')');}
+    mx.fillStyle=sp;mx.fillRect(0,0,M.width,M.height);
+    function ring(r0,r1,a){if(a<0.005)return;var c=b2*ms,gr=mx.createRadialGradient(c,c,r0*R*ms,c,c,r1*R*ms);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.25,'rgba(255,255,255,'+a.toFixed(3)+')');gr.addColorStop(.75,'rgba(255,255,255,'+a.toFixed(3)+')');gr.addColorStop(1,'rgba(255,255,255,0)');mx.fillStyle=gr;mx.fillRect(0,0,M.width,M.height);}
+    ring(0.7,0.96,0.14*pv[0]+0.1*pv[4]);ring(0.42,0.86,0.14*pv[1]);ring(0.18,0.46,0.14*pv[2]);ring(0,0.22,0.14*pv[3]+0.16*rp);
+    // the glass: dim, plus the lit glass where the light is, plus a burning core where it is brightest
+    var gc=TR.glass,gx=gc.getContext('2d'),tc=TR.tmp,tx=tc.getContext('2d');
+    gx.globalCompositeOperation='copy';gx.globalAlpha=1;gx.drawImage(TR.dim,0,0);
+    tx.globalCompositeOperation='copy';tx.drawImage(TR.lit,0,0);tx.globalCompositeOperation='destination-in';tx.imageSmoothingQuality='high';tx.drawImage(M,0,0,tc.width,tc.height);
+    gx.globalCompositeOperation='lighter';gx.drawImage(tc,0,0);
+    var heat=clamp(L*1.3-0.55+0.4*b,0,1)*(1-end);
+    if(heat>0.02){tx.globalCompositeOperation='copy';tx.drawImage(TR.hot,0,0);tx.globalCompositeOperation='destination-in';
+      var hg=tx.createRadialGradient(lpx/ms*DPR,lpy/ms*DPR,0,lpx/ms*DPR,lpy/ms*DPR,ls/ms*DPR*1.6);hg.addColorStop(0,'rgba(0,0,0,'+heat.toFixed(3)+')');hg.addColorStop(1,'rgba(0,0,0,0)');tx.fillStyle=hg;tx.fillRect(0,0,tc.width,tc.height);
+      gx.globalAlpha=0.6;gx.drawImage(tc,0,0);gx.globalAlpha=1;}
+    gx.globalCompositeOperation='source-over';gx.drawImage(TR.tracery,0,0);
   }
   function drawTransept(x,t,s,b){
     if(!TR.still)return;
     var g=V.glow(),L=g.L||0.2,R=TR.R,cx=TR.cx,cy=TR.cy,box=TR.box,end=g.end||0,wind=g.wind||0;
-    paintRose(t,g,s,b);
+    TR.f=(TR.f||0)+1;if(TR.f%2===1||!TR.painted){paintRose(t,g,s,b);TR.painted=1;}
     var rgb=TR.acc.join(',');
     x.setTransform(DPR,0,0,DPR,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;
     x.drawImage(TR.still,0,0,W,H);
     // halo: the glass's own light, widest and faintest outermost — no beam, a circle shines all round
     x.globalCompositeOperation='lighter';
-    var ha=(0.14+0.95*L)*(1+0.35*b)*(1-0.95*end);
-    [[1.6,0.7],[2.6,0.6],[4.2,0.6]].forEach(function(h){var r0=R*0.85,r1=R*h[0],gr=x.createRadialGradient(cx,cy,r0,cx,cy,r1);
-      for(var q=0;q<=8;q++){var u=q/8,a3=0.55*ha*h[1]*Math.pow(1-u,2.2);gr.addColorStop(u,'rgba('+rgb+','+Math.min(1,a3).toFixed(4)+')');}
-      x.fillStyle=gr;x.fillRect(cx-r1,cy-r1,r1*2,r1*2);});
-    x.globalCompositeOperation='overlay';x.globalAlpha=0.06;x.fillStyle=x.createPattern(GRAIN,'repeat');x.fillRect(cx-R*4.2,cy-R*4.2,R*8.4,R*8.4);x.globalAlpha=1;x.globalCompositeOperation='lighter';
+    var ha=(0.14+0.95*L)*(1+0.35*b)*(1-0.95*end)/1.4,HR=TR.HR;
+    if(ha>0.01){x.globalAlpha=Math.min(1,ha);x.drawImage(TR.halo,cx-HR,cy-HR,HR*2,HR*2);}
+    x.globalAlpha=1;
     x.globalCompositeOperation='source-over';
     x.drawImage(TR.glass,cx-box/2,cy-box/2,box,box);
     // the glass blooms where it is brightest
