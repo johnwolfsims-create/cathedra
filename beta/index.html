@@ -1789,7 +1789,7 @@ var Rain = (function () {
   // draw in the window's own coordinates; light: how bright the glass behind is (0..~1.5)
   Field.prototype.draw = function (g, light, noClip) {
     if (this.idle) return;
-    var o = this.o, t = this.t, D = this.drops, li = Math.max(0.22, Math.min(1.4, light)), p = this.pe;
+    var o = this.o, t = this.t, D = this.drops, li = Math.max(0.5, Math.min(1.4, light)), p = this.pe;
     g.save(); if (!noClip) { o.clip(g); g.clip(); }
     if (p > 0.005) { g.fillStyle = 'rgba(10,13,20,' + (0.15 * p).toFixed(3) + ')'; g.fillRect(0, 0, o.w, o.h); }   // wet glass, a little greyer
     g.globalAlpha = Math.min(1, 0.55 + 0.45 * li); g.drawImage(this.trail, 0, 0, o.w, o.h);
@@ -2014,7 +2014,7 @@ var V=(function(){
     x.globalCompositeOperation='source-over';x.globalAlpha=1;
   }
   // ---- the real sky: the hour decides what light stands behind the glass
-  var skyS={tint:[255,255,255],amt:0,bright:1,night:0},skyT=-99,endT=0,stars=[];
+  var skyS={tint:[255,255,255],amt:0,bright:1,night:0},skyB=null,rainK=0,skyT=-99,endT=0,stars=[];
   function hourNow(){
     var o=S.lux||'auto';
     if(o!=='auto')return {mane:6.9,meridies:12.3,vespera:17.9,nox:22}[o];
@@ -2238,7 +2238,11 @@ var V=(function(){
     var t=now(),s=geo.s;
     // light strength follows the organ's dynamics: crescendos swell it, relative to the recent loudest
     var dt0=Math.min(0.1,t-(lastF||t));lastF=t;
-    if(t-skyT>5){skyT=t;computeSky();}
+    if(t-skyT>5){skyT=t;computeSky();skyB=skyS;}
+    // rain brings its own night: no sun through wet glass — the light dims and stills, the candles and the lantern take over
+    var rlv=0;try{rlv=Rain.level();}catch(e){}var rt=rlv>0?0.65+0.35*rlv:0;rainK+=(rt-rainK)*(1-Math.exp(-dt0/4));if(rainK<0.002&&rt===0)rainK=0;
+    if(skyB){var k=rainK,n0=skyB.night;skyS={tint:k>0?mixc(skyB.amt>0?skyB.tint:[255,255,255],[55,66,92],k):skyB.tint,amt:skyB.amt*(1-k)+0.45*k,
+      bright:Math.min(skyB.bright,1-0.8*k),night:Math.max(n0,k),stars:n0*(1-k),rain:k};}
     var endK=endT?Math.min(1,(t-endT)/13):0,endBack=endT&&t-endT>45?Math.min(1,(t-endT-45)/10):0;if(endBack>=1)endT=0;var endDark=endK*(1-endBack);endDarkV=endDark;
     var lv=(organ.ctx&&playing)?organ.level():0;
     lvAvg+=(lv-lvAvg)*(1-Math.exp(-dt0/0.9));            // average out the beating of the pipes
@@ -2266,7 +2270,7 @@ var V=(function(){
       var dx=p.cx-light.x,dy=p.cy-light.y,f=Math.exp(-(dx*dx+dy*dy)/(2*light.s*light.s));
       var b=0.16+L*(0.45+1.0*f)+0.14*pv[p.v]+(p.v===0?0.1*pv[4]:0)+(p.v===3?0.16*rp:0)+0.05*Math.sin(p.ph+t*p.sp)+0.025*wind*L+0.3*bloom*L;
       if(!entered||introT){var ip=Math.min(1,(t-introT)/5.5),th=700-ip*(700-60),dd=(p.cy-th)/60;b*=Math.max(0,Math.min(1,dd+0.3));}
-      b*=skyS.bright*(1-0.94*endDark);p.b=b;var c=skyS.amt>0?mixc(p.c,skyS.tint,skyS.amt):p.c,r,gg,bb;
+      if(skyS.rain)b=0.16+(b-0.16)*(1-0.85*skyS.rain);b*=skyS.bright*(1-0.94*endDark);p.b=b;var c=skyS.amt>0?mixc(p.c,skyS.tint,skyS.amt):p.c,r,gg,bb;
       if(b<=1){r=c[0]*b;gg=c[1]*b;bb=c[2]*b;}else{var e=Math.min(.55,(b-1)*.45);r=c[0]+(255-c[0])*e;gg=c[1]+(255-c[1])*e;bb=c[2]+(255-c[2])*e;}
       acc[0]+=c[0]*b;acc[1]+=c[1]*b;acc[2]+=c[2]*b;wsum+=b;
       g.fillStyle='rgb('+(r|0)+','+(gg|0)+','+(bb|0)+')';
@@ -2275,8 +2279,8 @@ var V=(function(){
       for(var i=0;i<panes.length;i++){var p=panes[i];if(p.l!==l)continue;shade(p);var q=p.q;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(var k2=1;k2<q.length;k2++)g.lineTo(q[k2][0],q[k2][1]);g.closePath();g.fill();}
       g.restore();});
     panes.forEach(function(p){if(p.t!=='c')return;shade(p);g.beginPath();g.arc(p.x,p.y,p.r,0,6.2832);g.fill();});
-    if(skyS.night>0.05){g.save();lancetPath(g,LL);lancetPath(g,RR);g.clip();g.fillStyle='#fff';
-      stars.forEach(function(st){var a=skyS.night*(0.25+0.45*(0.5+0.5*Math.sin(st.ph+t*st.sp)))*(1-endDark*0.5);g.globalAlpha=a;g.beginPath();g.arc(st.x,st.y,st.r,0,6.2832);g.fill();});g.restore();g.globalAlpha=1;}
+    var stN=skyS.stars!=null?skyS.stars:skyS.night;if(stN>0.05){g.save();lancetPath(g,LL);lancetPath(g,RR);g.clip();g.fillStyle='#fff';
+      stars.forEach(function(st){var a=stN*(0.25+0.45*(0.5+0.5*Math.sin(st.ph+t*st.sp)))*(1-endDark*0.5);g.globalAlpha=a;g.beginPath();g.arc(st.x,st.y,st.r,0,6.2832);g.fill();});g.restore();g.globalAlpha=1;}
     // rain on the outside of the glass: under the lead, the texture and the stone
     if(!set.rain||set.rain.o.u!==s)set.rain=new Rain.Field({w:300,h:700,u:s,max:950,
       inside:function(x0,y0){var dx=x0-ROSE.x,dy=y0-ROSE.y;return inside(LL,x0,y0)||inside(RR,x0,y0)||dx*dx+dy*dy<ROSE.r*ROSE.r;},
