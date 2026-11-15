@@ -1345,6 +1345,17 @@ function trebleNote(c){
 function ampFor(m){return 0.07*duck*(m<50?1.15:m>72?0.85:1);}
 
 function sound(c,D){
+  if(c.contemplatio){
+    // one soft root held in the middle of the organ, the pedal an octave below; everything else lets go slowly
+    var m=48+((c.root%12)+12)%12;if(m>55)m-=12;
+    setVoice('u0',m,'manual',ampFor(m)*0.75,4.5,6);
+    for(var v=1;v<4;v++)setVoice('u'+v,null,'manual',0,1,7);
+    setVoice('bass',S.pedale>0?m-12:null,'pedal',0.085*duck,5,7);
+    ['sub','quint','treble','oct0','oct1','oct2','oct3'].forEach(function(k){setVoice(k,null,'manual',0,1,7);});
+    organ.dynamics([[0,0.34,D*0.6]]);
+    V.tension(0);lastTension=0;V.chord(c);showChord(c);
+    return;
+  }
   var att=Math.max(1.2,Math.min(3.5,D*0.18)),rel=Math.max(1.8,Math.min(5,D*0.26));
   var up=c.voicing.upper.slice();
   if(c.sus)up[c.sus.voice]=c.sus.from;
@@ -1418,7 +1429,10 @@ function step(){
   var D=chordDur();
   if(total&&el>total-2.2*D)orgel.wantEnd=true;
   var c,lo=loftOpts;loftOpts=null;
-  if(lo&&Rooms.room()==='organum'&&!(orgel.wantEnd&&!lo.wantEnd)){
+  if(!orgel.wantEnd&&Rooms.contemplating()){
+    // contemplatio: Orgel goes home and lets everything fall away but the tonic
+    c=orgel.finish(orgel.home());c.sus=null;c.contemplatio=true;
+  }else if(lo&&Rooms.room()==='organum'&&!(orgel.wantEnd&&!lo.wantEnd)){
     // the organ loft: the card you chose, or Orgel's own pick among the three
     var pi=Rooms.picked();
     if(pi<0){var rr=Math.random(),acc=0;pi=lo.length-1;for(var j=0;j<lo.length;j++){acc+=lo[j].p;if(rr<acc){pi=j;break;}}}
@@ -2895,9 +2909,11 @@ var Rooms=(function(){
   $('toVetus').onclick=function(){goSide(-1);};$('toNovum').onclick=function(){goSide(1);};$('toNavisSide').onclick=function(){goSide(room==='vetus'?1:-1);};
   var rz=0;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(place,200);});
 
+  window.__lecJump=function(ph){var L2=LEC[room];if(!L2)return 'no';for(var i=0;i<L2.list.length;i++)if(L2.list[i].phase===ph){L2.i=i;lecCount=0;lecShow(room,true);return i;}return 'none';};
   window.__cathedraLap=function(){return opts?(performance.now()-lapStart)/(lapEnd-lapStart):null;};
   return {
     place:place,go:go,goSide:goSide,goTo:goTo,room:function(){return room;},chord:lecChord,
+    contemplating:function(){if(room!=='vetus'&&room!=='novum')return false;var L2=LEC[room];if(!L2||!L2.list.length)return false;var p=L2.list[L2.i%L2.list.length];return p.phase===3;},
     offer:function(list,start,end,delay){if(opts&&opts.length&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now()+(delay||0);faces();layoutHits();},
     clear:function(){if(opts&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=null;picked=-1;hits.innerHTML='';},
     picked:function(){return picked;},
