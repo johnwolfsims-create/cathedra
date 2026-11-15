@@ -76,6 +76,22 @@ body.room-vetus .roomhead,body.room-novum .roomhead,body.room-vetus #toNavisSide
 body.room-vetus #panel,body.room-novum #panel{left:auto;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);animation:cornerIn 1.4s ease .5s both}
 body.room-vetus #panel .row,body.room-novum #panel .row{gap:6px}
 body.room-vetus #play,body.room-novum #play{width:52px;height:52px}
+#lecIdxBtn{display:none;position:fixed;left:10px;bottom:calc(env(safe-area-inset-bottom) + 12px - var(--gap,0px));width:58px;height:48px;border:none;background:none;color:#9C958A;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-family:'Alegreya SC',serif;font-size:12px;letter-spacing:.08em;transition:opacity 1.2s;z-index:6}
+body.room-vetus #lecIdxBtn,body.room-novum #lecIdxBtn{display:flex;animation:cornerIn 1.4s ease .5s both}
+body.calm #lecIdxBtn{opacity:0;pointer-events:none}
+#lecSheet{position:fixed;left:0;right:0;bottom:calc(0px - var(--gap,0px));max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(9,8,7,.95);border-top:1px solid rgba(217,180,90,.35);border-radius:22px 22px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:30}
+#lecSheet.open{transform:none}
+@media (min-aspect-ratio:6/5){#lecSheet{max-width:560px;margin:0 auto}}
+#lecSheet h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:34px;color:#F2EADA}
+#lecSheet .sub{margin:2px 0 14px;font-family:'Pfeffer',Fondamento,serif;font-style:italic;color:#9C958A}
+#lecSheet h2{margin:22px 0 6px;font-family:'Alegreya SC',serif;font-weight:500;font-size:12px;letter-spacing:.2em;color:#D9B45A}
+#lecSheet .close{all:unset;position:absolute;right:16px;top:12px;width:40px;height:40px;text-align:center;font-size:26px;color:#9C958A;cursor:pointer}
+#abInitio{all:unset;cursor:pointer;display:inline-block;padding:9px 16px;border:1px solid rgba(217,180,90,.5);border-radius:12px;color:#E6C46E;font-family:'Alegreya SC',serif;font-size:13px;letter-spacing:.14em}
+.lx{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;padding:7px 10px;border-radius:10px;border-left:2px solid transparent}
+.lx .l1{display:block;font-family:'Pfeffer',Fondamento,serif;font-size:15px;color:#C9A25A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lx .l2{display:block;font-family:Alegreya,serif;font-style:italic;font-size:13px;color:#9C958A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lx.on{background:rgba(217,180,90,.1);border-left-color:#E6C46E}.lx.on .l1{color:#F0D58A}
+.lx.ph .l1{font-family:'Alegreya SC',serif;font-size:12px;letter-spacing:.18em;color:#B7AE9F}
 @keyframes cornerIn{from{opacity:0}to{opacity:1}}
 .ohit{all:unset;position:absolute;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}
 #memento{position:absolute;left:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
@@ -218,6 +234,16 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <p id="modeline" class="sc"></p>
 </div>
 
+<button id="lecIdxBtn" type="button" aria-label="Index of the readings">
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14M5 10h10M5 14.5h12M5 19h7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>index
+</button>
+<section id="lecSheet" aria-label="Index of the readings">
+  <button class="close" type="button" aria-label="Close" id="closeLec">×</button>
+  <h1>index</h1>
+  <p class="sub">where to take up the Word</p>
+  <button id="abInitio" type="button">ab initio</button>
+  <div id="lecList"></div>
+</section>
 <section id="sheet" aria-label="Ordo">
   <button class="close" type="button" aria-label="Close" id="closeSheet">×</button>
   <h1>ordo</h1>
@@ -1645,6 +1671,21 @@ function build(){
   [['organum','organum'],['vetus','vetus'],['navis','navis'],['novum','novum'],['crypta','crypta']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip'+(d[0]==='navis'?' on':'');b.dataset.v=d[0];b.textContent=d[1];
     b.onclick=function(){$('sheet').classList.remove('open');setTimeout(function(){Rooms.goTo(d[0]);},350);};$('loca').appendChild(b);});
   $('closeSheet').onclick=function(){$('sheet').classList.remove('open');};
+  // the index of the readings: begin again, or take up the reading wherever you like
+  var PHN=['lectio','meditatio','oratio','contemplatio'];
+  function lecClose(){$('lecSheet').classList.remove('open');}
+  function lecOpen(){
+    var ix=Rooms.lecIndex();if(!ix||!ix.list.length)return;var box=$('lecList');box.innerHTML='';var lastRef='',cur=null;
+    ix.list.forEach(function(p,i){
+      if(p.ref!==lastRef){lastRef=p.ref;var h=document.createElement('h2');h.textContent=p.ref;box.appendChild(h);}
+      var b=document.createElement('button');b.type='button';b.className='lx'+(i===ix.i?' on':'')+(p.phase?' ph':'');
+      var a=document.createElement('span');a.className='l1';var e=document.createElement('span');e.className='l2';
+      if(p.phase){a.textContent=PHN[p.phase];e.textContent=p.phase===3?'silence':p.en;}else{a.textContent=p.la;e.textContent=p.en;}
+      b.appendChild(a);b.appendChild(e);b.onclick=function(){Rooms.lecGo(i);lecClose();};box.appendChild(b);if(i===ix.i)cur=b;});
+    $('lecSheet').classList.add('open');
+    if(cur)setTimeout(function(){var sh=$('lecSheet');sh.scrollTop=Math.max(0,cur.offsetTop-sh.clientHeight*0.4);},30);
+  }
+  $('lecIdxBtn').onclick=lecOpen;$('closeLec').onclick=lecClose;$('abInitio').onclick=function(){Rooms.lecGo(0);lecClose();};
 }
 var sonusT;
 function sonus(k){
@@ -2215,6 +2256,7 @@ var V=(function(){
     verse:setVerse,refont:function(){if(verse.cur){var tx=verse.cur.text;verse.cur=null;setVerse(tx);}},
     end:function(){endT=now();awake=false;},relight:function(){skyT=-99;},
     candlesLit:function(){return skyS.night>0.3;},
+    sky:function(){return skyS;},
     bell:function(){bloomT=Math.max(bloomT,0.45);relT=Math.max(relT,0.18);},
     intro:function(){introT=now();entered=false;},enter:function(){entered=true;enterT=now();bloomT=Math.max(bloomT,0.5);},
     tension:function(v){shadeT=Math.max(0,Math.min(1,v));},release:function(v){shadeT=0;relT=Math.max(relT,v);},wake:function(){awake=true;},dim:function(){awake=false;},sonus:function(){},
@@ -2676,6 +2718,32 @@ var Rooms=(function(){
     TR.lamps=[[cx-R*1.25,cy-R*0.15],[cx+R*1.25,cy-R*0.15]].filter(function(l){return l[0]>pw*0.9&&l[0]<W-pw*0.9;});
     var r=rnd(3);TR.motes=[];for(var m=0;m<18;m++)TR.motes.push({x:cx+(r()-.5)*2.4*R,y:cy-R+r()*R*2.6,s:(0.8+r()*1.2)*k,d:10+r()*8,o:r()*18});
     TR.haze=[];for(m=0;m<6;m++)TR.haze.push({x:cx+(r()-.5)*R*2,d:40+r()*30,o:r()*70,s:R*(0.5+r()*0.5)});
+    // the lantern: hung on a chain from the vault, centred over the rose — the room's only light by night
+    var u=R/131*0.92,ly=Math.max(30*u+6,(cy-R)*0.56),lw=Math.ceil(34*u),lh=Math.ceil(ly+30*u);
+    function lc(){var c=mk(Math.ceil(lw*DPR),Math.ceil(lh*DPR)),q=c.getContext('2d');q.scale(DPR,DPR);q.translate(lw/2,ly);return [c,q];}
+    var y0=-28*u,bt=-14*u,bb=12*u,tw=11*u,bw2=9*u;
+    function body(q){q.beginPath();q.moveTo(-tw,bt);q.lineTo(tw,bt);q.lineTo(bw2,bb);q.lineTo(-bw2,bb);q.closePath();}
+    var A=lc(),q=A[1];   // chain and dark glass
+    q.strokeStyle='#100c09';q.lineWidth=Math.max(1,0.9*u);q.beginPath();q.moveTo(0,-ly);q.lineTo(0,y0);q.stroke();
+    for(var cy2=-ly+3*u;cy2<y0;cy2+=4.2*u){q.beginPath();q.ellipse(0,cy2,(cy2/(4.2*u))%2<1?1.3*u:0.5*u,2*u,0,0,6.2832);q.stroke();}
+    body(q);q.fillStyle='#120e0b';q.fill();
+    var B=lc();q=B[1];   // the panes lit from within
+    body(q);q.save();q.clip();var lg=q.createRadialGradient(0,2*u,1,0,0,16*u);lg.addColorStop(0,'rgba(255,236,190,1)');lg.addColorStop(.35,'rgba(255,196,120,.95)');lg.addColorStop(1,'rgba(200,120,50,.75)');q.fillStyle=lg;q.fillRect(-tw,bt,tw*2,bb-bt);q.restore();
+    var C=lc();q=C[1];   // the iron: cap, ring, bars, base and drop
+    q.fillStyle='#16110d';q.strokeStyle='#16110d';q.lineWidth=1.6*u;q.lineJoin='round';
+    q.beginPath();q.arc(0,y0+1.6*u,1.8*u,0,6.2832);q.lineWidth=1*u;q.stroke();
+    q.beginPath();q.moveTo(-2.5*u,y0+3.5*u);q.lineTo(2.5*u,y0+3.5*u);q.lineTo(13*u,bt-2.4*u);q.lineTo(-13*u,bt-2.4*u);q.closePath();q.fill();
+    q.fillRect(-14*u,bt-2.6*u,28*u,2.8*u);
+    q.lineWidth=1.5*u;[[-tw,-bw2],[-tw*0.42,-bw2*0.42],[tw*0.42,bw2*0.42],[tw,bw2]].forEach(function(b){q.beginPath();q.moveTo(b[0],bt);q.lineTo(b[1],bb);q.stroke();});
+    q.lineWidth=1*u;q.beginPath();q.moveTo(-tw*0.98,bt+(bb-bt)*0.5);q.lineTo(tw*0.98,bt+(bb-bt)*0.5);q.globalAlpha=0.0;q.stroke();q.globalAlpha=1;
+    q.fillRect(-11*u,bb,22*u,2.2*u);
+    q.beginPath();q.moveTo(-10*u,bb+2*u);q.lineTo(10*u,bb+2*u);q.lineTo(3*u,bb+8*u);q.lineTo(-3*u,bb+8*u);q.closePath();q.fill();
+    q.beginPath();q.moveTo(0,bb+8*u);q.quadraticCurveTo(2.4*u,bb+11*u,0,bb+14*u);q.quadraticCurveTo(-2.4*u,bb+11*u,0,bb+8*u);q.fill();
+    var D=lc();q=D[1];   // the warm catch-light on the iron's inner edges
+    q.strokeStyle='rgba(255,196,130,.85)';q.lineWidth=0.7*u;
+    [[-tw*0.42,-bw2*0.42,1],[tw*0.42,bw2*0.42,-1]].forEach(function(b){q.beginPath();q.moveTo(b[0]+b[2]*0.8*u,bt);q.lineTo(b[1]+b[2]*0.8*u,bb);q.stroke();});
+    q.beginPath();q.moveTo(-12*u,bt-0.2*u);q.lineTo(12*u,bt-0.2*u);q.stroke();q.beginPath();q.moveTo(-10*u,bb+0.2*u);q.lineTo(10*u,bb+0.2*u);q.stroke();
+    TR.lan={x:cx,y:ly,w:lw,h:lh,u:u,A:A[0],B:B[0],C:C[0],D:D[0]};
     var lb=$('lectio');lb.style.top=Math.round(cy+R+R*0.16+20*k)+'px';lb.style.height=Math.max(90,Math.round((H-84)-(cy+R+R*0.16+20*k)))+'px';
     $('transeptLabel').textContent=side==='vetus'?'vetus testamentum':'novum testamentum';
     var nb=$('toNavisSide');nb.textContent=side==='vetus'?'navis →':'← navis';nb.classList.toggle('lefttop',side==='novum');nb.setAttribute('aria-label',side==='vetus'?'Back to the nave, to the right':'Back to the nave, to the left');
@@ -2709,17 +2777,20 @@ var Rooms=(function(){
   function drawTransept(x,t,s,b){
     if(!TR.still)return;
     var g=V.glow(),L=g.L||0.2,R=TR.R,cx=TR.cx,cy=TR.cy,box=TR.box,end=g.end||0,wind=g.wind||0;
+    var sk=V.sky?V.sky():null,n=sk?sk.night||0:0,LN=TR.lan,fl=0.9+0.05*Math.sin(t*3.1)+0.035*Math.sin(t*7.7+1)+0.02*Math.sin(t*13.3);
+    var lit=n*(0.82+0.18*L+0.08*b)*fl*(1-0.85*end);
     TR.f=(TR.f||0)+1;if(TR.f%2===1||!TR.painted){paintRose(t,g,s,b);TR.painted=1;}
     var rgb=TR.acc.join(',');
     x.setTransform(DPR,0,0,DPR,0,0);x.globalCompositeOperation='source-over';x.globalAlpha=1;
     x.drawImage(TR.still,0,0,W,H);
     // halo: the glass's own light, widest and faintest outermost — no beam, a circle shines all round
     x.globalCompositeOperation='lighter';
-    var ha=(0.14+0.95*L)*(1+0.35*b)*(1-0.95*end)/1.4,HR=TR.HR;
+    var ha=(0.14+0.95*L)*(1+0.35*b)*(1-0.95*end)/1.4*(1-0.92*n),HR=TR.HR;
     if(ha>0.01){x.globalAlpha=Math.min(1,ha);x.drawImage(TR.halo,cx-HR,cy-HR,HR*2,HR*2);}
     x.globalAlpha=1;
     x.globalCompositeOperation='source-over';
     x.drawImage(TR.glass,cx-box/2,cy-box/2,box,box);
+    if(n>0.01){x.save();x.beginPath();x.arc(cx,cy,R*0.95,0,6.2832);x.fillStyle='rgba(3,4,10,'+(0.86*n).toFixed(3)+')';x.fill();x.restore();}
     // the glass blooms where it is brightest
     var bl=TR.bloom,bx2=bl.getContext('2d');bx2.globalCompositeOperation='copy';bx2.imageSmoothingQuality='high';bx2.drawImage(TR.glass,0,0,bl.width,bl.height);
     var bl2=TR.bloom2,bx3=bl2.getContext('2d');bx3.globalCompositeOperation='copy';bx3.imageSmoothingQuality='high';bx3.drawImage(bl,0,0,bl2.width,bl2.height);
@@ -2728,31 +2799,46 @@ var Rooms=(function(){
 
     // the pillars catch the light on their inner faces
     var pw=TR.pw;x.drawImage(TR.pillar,0,0,pw,H);x.save();x.translate(W,0);x.scale(-1,1);x.drawImage(TR.pillar,0,0,pw,H);x.restore();
-    x.globalCompositeOperation='lighter';var pa=(0.03+0.3*L).toFixed(3);
+    x.globalCompositeOperation='lighter';var pa=((0.03+0.3*L)*(1-n)+0.1*lit).toFixed(3);if(n>0)rgb=[Math.round(TR.acc[0]*(1-n)+255*n),Math.round(TR.acc[1]*(1-n)+178*n),Math.round(TR.acc[2]*(1-n)+100*n)].join(',');
     var p1=x.createLinearGradient(pw*0.45,0,pw,0);p1.addColorStop(0,'rgba('+rgb+',0)');p1.addColorStop(1,'rgba('+rgb+','+pa+')');x.fillStyle=p1;x.fillRect(0,0,pw,H);
     var p2=x.createLinearGradient(W-pw*0.45,0,W-pw,0);p2.addColorStop(0,'rgba('+rgb+',0)');p2.addColorStop(1,'rgba('+rgb+','+pa+')');x.fillStyle=p2;x.fillRect(W-pw,0,pw,H);
     // the tide: darkness pressing in from the edges, pushed back by every swell
     x.globalCompositeOperation='source-over';
-    var reach=(R*(0.5+1.25*L+0.4*b)+6*wind)*(1-0.7*end)+4;
-    x.save();x.translate(cx,cy);x.scale(1,1.2);
+    var reach=((R*(0.5+1.25*L+0.4*b)+6*wind)*(1-n)+n*R*(0.95+0.3*L+0.15*b)*fl)*(1-0.7*end)+4,tcy=cy*(1-n)+LN.y*n;
+    x.save();x.translate(cx,tcy);x.scale(1,1.2);
     var dk=x.createRadialGradient(0,0,reach*0.35,0,0,reach+Math.max(W,H)*0.36);dk.addColorStop(0,'rgba(2,2,2,0)');dk.addColorStop(.3,'rgba(2,2,2,.55)');dk.addColorStop(.6,'rgba(2,2,2,.93)');dk.addColorStop(1,'rgba(1,1,1,.995)');
     x.fillStyle=dk;x.fillRect(-W*2,-H*2,W*4,H*4);x.restore();
     x.drawImage(TR.vign,0,0,W,H);
     // re-light the glass itself so the dark never dims the window
-    x.globalAlpha=Math.min(1,(0.55+0.45*L)*(1-end));x.drawImage(TR.glass,cx-box/2,cy-box/2,box,box);x.globalAlpha=1;
-    x.save();x.beginPath();x.arc(cx,cy,R*0.93,0,6.2832);x.clip();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,0.08+0.4*L+0.2*b)*(1-end);x.drawImage(TR.bloom,cx-box/2,cy-box/2,box,box);x.restore();x.globalAlpha=1;x.globalCompositeOperation='source-over';
-    // the sanctuary lamps: red glass, a small steady flame
+    x.globalAlpha=Math.min(1,(0.55+0.45*L)*(1-end)*(1-0.88*n));x.drawImage(TR.glass,cx-box/2,cy-box/2,box,box);x.globalAlpha=1;
+    x.save();x.beginPath();x.arc(cx,cy,R*0.93,0,6.2832);x.clip();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,0.08+0.4*L+0.2*b)*(1-end)*(1-n);x.drawImage(TR.bloom,cx-box/2,cy-box/2,box,box);x.restore();x.globalAlpha=1;x.globalCompositeOperation='source-over';
+    // the lantern over the rose: dark iron by day; by night the one light in the room, swaying a little on its chain
+    var sw=Math.sin(t*0.9)*0.008+Math.sin(t*0.37+1)*0.006;
+    x.save();x.translate(LN.x,0);x.rotate(sw);x.translate(-LN.w/2,0);
+    x.drawImage(LN.A,0,0,LN.w,LN.h);
+    if(lit>0.01){x.globalAlpha=Math.min(1,lit);x.drawImage(LN.B,0,0,LN.w,LN.h);x.globalAlpha=1;}
+    x.drawImage(LN.C,0,0,LN.w,LN.h);
+    if(lit>0.01){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,lit*0.8);x.drawImage(LN.D,0,0,LN.w,LN.h);x.globalAlpha=1;x.globalCompositeOperation='source-over';}
+    x.restore();
+    if(lit>0.01){var lx4=LN.x+Math.sin(sw)*LN.y,ly4=LN.y;x.globalCompositeOperation='lighter';
+      var gr1=R*(1.9+0.5*L+0.25*b)*fl;x.globalAlpha=Math.min(1,0.34*lit);x.drawImage(SP.warm,lx4-gr1,ly4-gr1,gr1*2,gr1*2);
+      var gr2=R*0.42*fl;x.globalAlpha=Math.min(1,0.55*lit);x.drawImage(SP.warm,lx4-gr2,ly4-gr2,gr2*2,gr2*2);
+      // and a little of it caught on the rose's leading
+      x.save();x.beginPath();x.arc(cx,cy,R*0.95,0,6.2832);x.clip();x.globalAlpha=Math.min(1,0.22*lit);var gr3=R*1.1;x.drawImage(SP.warm,lx4-gr3,ly4-gr3*0.6,gr3*2,gr3*2);x.restore();
+      x.globalAlpha=1;x.globalCompositeOperation='source-over';}
+    // the sanctuary lamps: red glass, a small steady flame (they give way to the lantern at night)
+    var dayK=1-n;
     TR.lamps.forEach(function(l,i){var lx3=l[0],ly3=l[1],k=TR.k,fl=0.86+0.08*Math.sin(t*2.3+i*2)+0.05*Math.sin(t*6.1+i);
       x.strokeStyle='#14100c';x.lineWidth=1.2;x.beginPath();x.moveTo(lx3,0);x.lineTo(lx3,ly3-16*k);x.stroke();
       x.fillStyle='#1a140e';x.beginPath();x.moveTo(lx3-9*k,ly3-14*k);x.lineTo(lx3+9*k,ly3-14*k);x.lineTo(lx3+5*k,ly3-10*k);x.lineTo(lx3-5*k,ly3-10*k);x.closePath();x.fill();
-      x.globalCompositeOperation='lighter';x.globalAlpha=0.5*fl;var gR=46*k;x.drawImage(SP.red,lx3-gR,ly3-gR,gR*2,gR*2);
-      x.globalCompositeOperation='source-over';x.globalAlpha=1;x.fillStyle='rgba(150,24,18,.92)';x.beginPath();x.moveTo(lx3-7*k,ly3-10*k);x.lineTo(lx3+7*k,ly3-10*k);x.lineTo(lx3+5*k,ly3+6*k);x.quadraticCurveTo(lx3,ly3+10*k,lx3-5*k,ly3+6*k);x.closePath();x.fill();
-      x.globalCompositeOperation='lighter';x.globalAlpha=0.9*fl;x.drawImage(SP.warm,lx3-7*k,ly3-8*k,14*k,14*k);x.globalCompositeOperation='source-over';x.globalAlpha=1;
-      x.fillStyle='#ffe8c0';x.beginPath();x.ellipse(lx3,ly3-2*k,1.3*k,3*k*fl,0,0,6.2832);x.fill();});
+      x.globalCompositeOperation='lighter';x.globalAlpha=0.5*fl*dayK;var gR=46*k;x.drawImage(SP.red,lx3-gR,ly3-gR,gR*2,gR*2);
+      x.globalCompositeOperation='source-over';x.globalAlpha=1;x.fillStyle=dayK>0.5?'rgba(150,24,18,.92)':'rgba('+Math.round(40+110*dayK)+',12,10,.92)';x.beginPath();x.moveTo(lx3-7*k,ly3-10*k);x.lineTo(lx3+7*k,ly3-10*k);x.lineTo(lx3+5*k,ly3+6*k);x.quadraticCurveTo(lx3,ly3+10*k,lx3-5*k,ly3+6*k);x.closePath();x.fill();
+      x.globalCompositeOperation='lighter';x.globalAlpha=0.9*fl*dayK;x.drawImage(SP.warm,lx3-7*k,ly3-8*k,14*k,14*k);x.globalCompositeOperation='source-over';x.globalAlpha=1;
+      if(dayK>0.05){x.globalAlpha=dayK;x.fillStyle='#ffe8c0';x.beginPath();x.ellipse(lx3,ly3-2*k,1.3*k,3*k*fl,0,0,6.2832);x.fill();x.globalAlpha=1;}});
     // incense hanging in the coloured light, and dust
     x.globalCompositeOperation='lighter';
-    TR.haze.forEach(function(h){var ph=((t+h.o)%h.d)/h.d,a=Math.sin(ph*Math.PI);x.globalAlpha=0.05*a*(0.4+0.6*s);var y=cy+R*1.4-ph*R*2.6;x.drawImage(SP.puff,h.x+Math.sin(ph*6+h.o)*R*0.15-h.s,y-h.s,h.s*2,h.s*2);});
-    TR.motes.forEach(function(m){var ph=((t+m.o)%m.d)/m.d,a=ph<.15?ph/.15:ph>.85?(1-ph)/.15:1,dd=Math.hypot(m.x-cx,m.y-cy)/(R*1.9),li=dd<1?Math.pow(1-dd,1.2):0;if(li<0.02)return;
+    TR.haze.forEach(function(h){var ph=((t+h.o)%h.d)/h.d,a=Math.sin(ph*Math.PI);x.globalAlpha=0.05*a*(0.4+0.6*s)*(1-0.6*n);var y=cy+R*1.4-ph*R*2.6;x.drawImage(SP.puff,h.x+Math.sin(ph*6+h.o)*R*0.15-h.s,y-h.s,h.s*2,h.s*2);});
+    TR.motes.forEach(function(m){var ph=((t+m.o)%m.d)/m.d,a=ph<.15?ph/.15:ph>.85?(1-ph)/.15:1,dd=n>0.5?Math.hypot(m.x-cx,m.y-LN.y)/(R*1.5):Math.hypot(m.x-cx,m.y-cy)/(R*1.9),li=dd<1?Math.pow(1-dd,1.2):0;if(li<0.02)return;
       x.globalAlpha=a*li*(0.12+0.95*L);var r2=m.s*3;x.drawImage(SP.dust,m.x+12*ph-r2,m.y+60*ph-r2,r2*2,r2*2);});
     x.globalCompositeOperation='source-over';x.globalAlpha=1;
   }
@@ -2804,7 +2890,8 @@ var Rooms=(function(){
     L2.i=(L2.i+1)%L2.list.length;lecShow(room,false);
   }
   /* =================== moving between rooms =================== */
-  function panelTop(){return H-170;}   // the controls' height while playing; rooms keep this layout always
+  var SAB=-1;function insetB(){if(SAB<0){var d=document.createElement('div');d.style.cssText='position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom)';document.body.appendChild(d);SAB=parseFloat(getComputedStyle(d).paddingBottom)||0;d.remove();}return SAB;}
+  function panelTop(){return H-170-insetB()+(window.__gap||0)-10;}   // the controls' height while playing; rooms keep this layout always
   function sizeCv(c){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR);c.style.width=W+'px';c.style.height=H+'px';}
   function place(){
     W=innerWidth;H=innerHeight;DPR=Math.min(2,window.devicePixelRatio||1);
@@ -2909,6 +2996,8 @@ var Rooms=(function(){
   $('toVetus').onclick=function(){goSide(-1);};$('toNovum').onclick=function(){goSide(1);};$('toNavisSide').onclick=function(){goSide(room==='vetus'?1:-1);};
   var rz=0;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(place,200);});
 
+  function lecIndex(){lecBuild();var L2=LEC[room];if(!L2)return null;return {side:room,i:L2.i%Math.max(1,L2.list.length),list:L2.list};}
+  function lecGo(i){var L2=LEC[room];if(!L2||!L2.list.length)return;L2.i=Math.max(0,Math.min(L2.list.length-1,i));lecCount=0;lecShow(room,false);}
   window.__lecJump=function(ph){var L2=LEC[room];if(!L2)return 'no';for(var i=0;i<L2.list.length;i++)if(L2.list[i].phase===ph){L2.i=i;lecCount=0;lecShow(room,true);return i;}return 'none';};
   window.__cathedraLap=function(){return opts?(performance.now()-lapStart)/(lapEnd-lapStart):null;};
   return {
@@ -2916,7 +3005,7 @@ var Rooms=(function(){
     contemplating:function(){if(room!=='vetus'&&room!=='novum')return false;var L2=LEC[room];if(!L2||!L2.list.length)return false;var p=L2.list[L2.i%L2.list.length];return p.phase===3;},
     offer:function(list,start,end,delay){if(opts&&opts.length&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=list&&list.length?list:null;picked=-1;lapStart=start;lapEnd=Math.max(start+500,end);shownAt=performance.now()+(delay||0);faces();layoutHits();},
     clear:function(){if(opts&&L.plate){prev=opts;prev.picked=picked;prevAt=performance.now();}opts=null;picked=-1;hits.innerHTML='';},
-    picked:function(){return picked;},
+    picked:function(){return picked;},lecIndex:lecIndex,lecGo:lecGo,
     relayout:function(){prep(room);}
   };
 })();
