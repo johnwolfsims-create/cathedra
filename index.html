@@ -64,16 +64,16 @@ body.in-room #toVetus,body.in-room #toNovum{opacity:0;pointer-events:none}
 .lec{position:absolute;left:0;right:0;top:62px;opacity:0;transition:opacity 1.8s ease}
 .lec.on{opacity:1}
 .lec p{margin:0}
-.lec .la{font-family:'Pfeffer',Fondamento,serif;line-height:1.28;margin-bottom:10px;position:relative}
-.lec .lt,#gate h1 .lt{padding:.3em 0;margin:-.3em 0}
+.lec .la{font-family:'Pfeffer',Fondamento,serif;line-height:1.28;margin:-.3em 0 calc(10px - .3em);position:relative}
+.lt,.lt2{padding:.3em 0}
 .lec .lt{display:block;background:linear-gradient(100deg,#8a6430 0%,#c29a58 30%,#d8b26a 55%,#a07a3c 80%,#8a6430 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 /* the shimmer: a soft band of light sliding over the gold — moved only by transform, so it glides on the GPU and never stutters */
-.lsh{position:absolute;left:0;right:0;top:-.3em;bottom:-.3em;overflow:hidden;pointer-events:none;opacity:.8}
-.lsw{position:absolute;top:0;bottom:0;left:-45%;width:45%;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);animation:shw 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
-.lt2{display:block;position:absolute;top:.3em;left:100%;width:222.2222%;color:#fff1cf;animation:sht 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
-@keyframes shw{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(322.2222%,0,0)}}
-@keyframes sht{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(-145%,0,0)}}
+.lsh{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;opacity:.8}
+.lsw{position:absolute;top:0;bottom:0;left:calc(-1 * var(--sw,45%));width:var(--sw,45%);-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);animation:shw 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+.lt2{display:block;position:absolute;top:0;left:var(--sw,100%);width:var(--w,222.2222%);box-sizing:border-box;color:#fff1cf;animation:sht 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+@keyframes shw{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(calc(var(--w) + var(--sw)),0,0)}}
+@keyframes sht{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(calc(-1 * (var(--w) + var(--sw))),0,0)}}
 .lec .en{font-family:Alegreya,serif;font-style:italic;color:#E8DFCC;line-height:1.38;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .lec.dwell .en,.lec.pray .en{color:#F3EBD9}
 /* in the transepts only the Word remains: play and Ordo step aside into the corner */
@@ -2902,7 +2902,8 @@ var Rooms=(function(){
   function fitOne(el){var box=$('lectio'),max=box.clientHeight-62;if(max<=0)return;var la=el.querySelector('.la'),en=el.querySelector('.en'),
       big=W>H*1.2,f=big?Math.round(clamp(H*0.042,28,52)):(el.classList.contains('dwell')||el.classList.contains('pray')?28:25);
     la.style.fontSize=f+'px';en.style.fontSize=Math.round(f*0.8)+'px';
-    while(el.scrollHeight>max&&f>14){f--;la.style.fontSize=f+'px';en.style.fontSize=Math.round(f*0.8)+'px';}}
+    while(el.scrollHeight>max&&f>14){f--;la.style.fontSize=f+'px';en.style.fontSize=Math.round(f*0.8)+'px';}
+    if(window.shimSize)window.shimSize(la);}
   function fitPhrase(){var a=$('lecA'),b2=$('lecB');if(a.classList.contains('on'))fitOne(a);if(b2.classList.contains('on'))fitOne(b2);}
   function lecEnter(side){lecBuild();lecCount=0;var L2=LEC[side];if(L2&&L2.i>=L2.list.length)L2.i=0;lecShown=null;lecShow(side,true);}
   function lecChord(fast){
@@ -3063,9 +3064,12 @@ build();ui();
 // the gate: the window wakes in the dark; one touch rings a bell and opens the nave
 V.intro();
 // the gold title sits exactly where the nave's title will be, so one simply fades into the other
+// the shimmer's copy of the letters must lay out exactly as the letters themselves: give it their width in whole pixels
+function shimSize(el){var w=el.clientWidth;if(!w)return;el.style.setProperty('--w',w+'px');el.style.setProperty('--sw',Math.round(w*0.45)+'px');}
+window.shimSize=shimSize;
 function alignGate(){var h=document.querySelector('#gate h1'),t=$('title');if(!h||!t||document.body.classList.contains('entered'))return;
-  h.style.transform='';var a=t.getBoundingClientRect(),b=h.getBoundingClientRect();if(!a.width)return;
-  h.style.transform='translate('+(a.left+a.width/2-(b.left+b.width/2)).toFixed(2)+'px,'+(a.top-b.top).toFixed(2)+'px)';}
+  h.style.transform='';shimSize(h);var a=t.getBoundingClientRect(),b=h.getBoundingClientRect();if(!a.width)return;var pad=parseFloat(getComputedStyle(h).fontSize)*0.3;
+  h.style.transform='translate('+(a.left+a.width/2-(b.left+b.width/2)).toFixed(2)+'px,'+(a.top-(b.top+pad)).toFixed(2)+'px)';}
 alignGate();try{document.fonts.ready.then(alignGate);}catch(e){}addEventListener('resize',function(){setTimeout(alignGate,60);});setTimeout(alignGate,400);
 $('gate').onclick=function(){
   alignGate();
