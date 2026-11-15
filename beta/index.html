@@ -67,9 +67,9 @@ body.in-room #toVetus,body.in-room #toNovum{opacity:0;pointer-events:none}
 .lec .lt{display:block;background:linear-gradient(100deg,#8a6430 0%,#c29a58 30%,#d8b26a 55%,#a07a3c 80%,#8a6430 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 /* the shimmer: a soft band of light sliding over the gold — moved only by transform, so it glides on the GPU and never stutters */
-.lec .lsh{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;opacity:.8}
-.lec .lsw{position:absolute;top:0;bottom:0;left:-45%;width:45%;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);animation:shw 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
-.lec .lt2{display:block;position:absolute;top:0;left:100%;width:222.2222%;color:#fff1cf;animation:sht 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+.lsh{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;opacity:.8}
+.lsw{position:absolute;top:0;bottom:0;left:-45%;width:45%;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);animation:shw 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+.lt2{display:block;position:absolute;top:0;left:100%;width:222.2222%;color:#fff1cf;animation:sht 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
 @keyframes shw{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(322.2222%,0,0)}}
 @keyframes sht{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(-145%,0,0)}}
 .lec .en{font-family:Alegreya,serif;font-style:italic;color:#E8DFCC;line-height:1.38;text-shadow:0 1px 3px rgba(0,0,0,.8)}
@@ -158,12 +158,11 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 /* the gate: darkness, the window waking, a touch to enter */
 #gate{position:fixed;top:0;left:0;right:0;height:calc(100% + var(--gap,0px));z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 121px - var(--gap,0px));cursor:pointer;box-sizing:border-box;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
 #gate.gone{opacity:0;pointer-events:none}
-#gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;
-  background:linear-gradient(100deg,#7a5426 0%,#c9a160 30%,#fff1cf 45%,#c9a160 60%,#7a5426 100%);background-size:250% 100%;
-  -webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;animation:gateIn 3s ease 2.6s forwards,shimmer 7s linear 2.6s infinite}
+#gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;position:relative;opacity:0;animation:gateIn 3s ease 2.6s forwards}
+#gate h1 .lt{display:block;background:linear-gradient(100deg,#7a5426 0%,#b48d4f 35%,#c9a160 60%,#7a5426 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+#gate h1 .lsw,#gate h1 .lt2{animation-duration:9s;animation-delay:2.6s}
 #gate p{margin:14px 0 0;font-family:'Alegreya SC',serif;letter-spacing:.24em;font-size:13px;color:#9C958A;opacity:0;animation:gateIn 2s ease 5.2s forwards,breathe 4s ease-in-out 7.2s infinite}
 @keyframes gateIn{to{opacity:1}}
-@keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.45}}
 body.intro #panel,body.intro #season{opacity:0;pointer-events:none}
 #panel,#season{transition:opacity 2s ease}
@@ -212,7 +211,7 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
 </div>
 <div id="transBox" hidden aria-hidden="true"><canvas id="transA"></canvas></div>
 </div>
-<button id="gate" type="button" aria-label="Enter Cathedra"><h1>cathedra</h1><p>tange ut intres</p></button>
+<button id="gate" type="button" aria-label="Enter Cathedra"><h1><span class="lt">cathedra</span><span class="lsh" aria-hidden="true"><span class="lsw"><span class="lt2">cathedra</span></span></span></h1><p>tange ut intres</p></button>
 <p id="season" class="sc"></p>
 <button id="toLoft" class="roomnav navehint" type="button" aria-label="Up to the organ loft">organum ↑</button>
 <button id="toCrypt" class="roomnav low navehint" type="button" aria-label="Down to the crypt">crypta ↓</button>
