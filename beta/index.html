@@ -63,11 +63,16 @@ body.in-room #toVetus,body.in-room #toNovum{opacity:0;pointer-events:none}
 .lec{position:absolute;left:0;right:0;top:62px;opacity:0;transition:opacity 1.8s ease}
 .lec.on{opacity:1}
 .lec p{margin:0}
-.lec .la{font-family:'Pfeffer',Fondamento,serif;line-height:1.28;margin-bottom:10px;
-  background:linear-gradient(100deg,#8a6430 0%,#c9a160 28%,#fff1cf 45%,#d8b26a 58%,#8a6430 100%);background-size:250% 100%;
-  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 9s linear infinite;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.lec .la{font-family:'Pfeffer',Fondamento,serif;line-height:1.28;margin-bottom:10px;position:relative}
+.lec .lt{display:block;background:linear-gradient(100deg,#8a6430 0%,#c29a58 30%,#d8b26a 55%,#a07a3c 80%,#8a6430 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+/* the shimmer: a soft band of light sliding over the gold — moved only by transform, so it glides on the GPU and never stutters */
+.lec .lsh{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;opacity:.8}
+.lec .lsw{position:absolute;top:0;bottom:0;left:-45%;width:45%;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 50%,transparent 100%);animation:shw 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+.lec .lt2{display:block;position:absolute;top:0;left:100%;width:222.2222%;color:#fff1cf;animation:sht 12s linear infinite;will-change:transform;transform:translate3d(0,0,0)}
+@keyframes shw{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(322.2222%,0,0)}}
+@keyframes sht{0%{transform:translate3d(0,0,0)}65%,100%{transform:translate3d(-145%,0,0)}}
 .lec .en{font-family:Alegreya,serif;font-style:italic;color:#E8DFCC;line-height:1.38;text-shadow:0 1px 3px rgba(0,0,0,.8)}
-.lec.dwell .la,.lec.pray .la{animation-duration:6s}
 .lec.dwell .en,.lec.pray .en{color:#F3EBD9}
 /* in the transepts only the Word remains: play and Ordo step aside into the corner */
 body.room-vetus #intro,body.room-novum #intro,body.room-vetus #motto,body.room-novum #motto,body.room-vetus #chord,body.room-novum #chord,
@@ -201,8 +206,8 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <div id="lectio" aria-live="polite">
     <p id="lecPhase" class="sc" aria-label="Lectio divina"><span>lectio</span> · <span>meditatio</span> · <span>oratio</span> · <span>contemplatio</span></p>
     <p id="lecRef" class="sc"></p>
-    <div id="lecA" class="lec on"><p class="la"></p><p class="en"></p></div>
-    <div id="lecB" class="lec"><p class="la"></p><p class="en"></p></div>
+    <div id="lecA" class="lec on"><p class="la"><span class="lt"></span><span class="lsh" aria-hidden="true"><span class="lsw"><span class="lt2"></span></span></span></p><p class="en"></p></div>
+    <div id="lecB" class="lec"><p class="la"><span class="lt"></span><span class="lsh" aria-hidden="true"><span class="lsw"><span class="lt2"></span></span></span></p><p class="en"></p></div>
   </div>
 </div>
 <div id="transBox" hidden aria-hidden="true"><canvas id="transA"></canvas></div>
@@ -2871,7 +2876,7 @@ var Rooms=(function(){
     [].forEach.call(document.querySelectorAll('#lecPhase span'),function(sp,i){sp.classList.toggle('on',i===p.phase);});
     $('lectio').classList.toggle('rest',p.phase===3);
     var a=$('lecA'),b2=$('lecB'),on=lecFlip?b2:a,off=lecFlip?a:b2;lecFlip=1-lecFlip;
-    off.querySelector('.la').textContent=p.la;off.querySelector('.en').textContent=p.en;off.classList.toggle('end',!!p.end);off.classList.toggle('dwell',p.phase===1);off.classList.toggle('pray',p.phase===2);
+    off.querySelector('.lt').textContent=p.la;off.querySelector('.lt2').textContent=p.la;off.querySelector('.en').textContent=p.en;off.classList.toggle('end',!!p.end);off.classList.toggle('dwell',p.phase===1);off.classList.toggle('pray',p.phase===2);
     fitOne(off);
     if(instant){on.style.transition=off.style.transition='none';}
     on.classList.remove('on');off.classList.add('on');
