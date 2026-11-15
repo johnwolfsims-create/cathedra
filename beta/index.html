@@ -158,6 +158,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 /* the gate: darkness, the window waking, a touch to enter */
 #gate{position:fixed;top:0;left:0;right:0;height:calc(100% + var(--gap,0px));z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 121px - var(--gap,0px));cursor:pointer;box-sizing:border-box;transition:opacity 2.2s ease;background:transparent;border:none;color:inherit;width:100%}
 #gate.gone{opacity:0;pointer-events:none}
+body:not(.entered) #title{opacity:0!important;transition:none}
+body.entered #title{transition:opacity 2.2s ease}
 #gate h1{margin:0;font-family:'Pfeffer',Fondamento,serif;font-weight:400;font-size:52px;line-height:1;position:relative;opacity:0;animation:gateIn 3s ease 2.6s forwards}
 #gate h1 .lt{display:block;background:linear-gradient(100deg,#7a5426 0%,#b48d4f 35%,#c9a160 60%,#7a5426 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 #gate h1 .lsw,#gate h1 .lt2{animation-duration:9s;animation-delay:2.6s}
@@ -812,22 +814,36 @@ Organ.prototype.init = function () {
   this.apply(true);
 };
 
-// a church bell: minor-third bell partials, each with its own long decay
-var BELL = [[0.5, .55, 10], [1.0, .32, 6.5], [1.19, .42, 5.5], [1.5, .16, 3.2], [2.0, .5, 4.2], [2.51, .13, 2.4], [2.66, .1, 2.0], [3.0, .12, 1.8], [4.07, .06, 1.2], [5.2, .03, 0.8]];
+// a church bell: minor-third bell partials, each with its own long decay.
+// One bell is one resonator: while it still rings, a new stroke re-excites the same partials instead of
+// starting fresh copies on top (identical tones in random phase cancel and swell — the overtones seemed to stutter).
+var BELL = [[0.5, .55, 10], [1.0, .32, 6.5], [1.19, .42, 5.5], [1.5, .16, 3.4], [2.0, .5, 4.4], [2.51, .13, 2.8], [2.66, .1, 2.4], [3.0, .12, 2.1], [4.07, .06, 1.6], [5.2, .03, 1.2]];
 Organ.prototype.bell = function (nominalMidi, when, amp) {
-  var ctx = this.ctx, f = this.freq(nominalMidi) / 2, self = this;   // the hum sits an octave under the nominal
-  BELL.forEach(function (p, i) {
-    [0, 1].forEach(function (k) {
-      if (k && i > 2) return;                                    // warbling doublets on the low partials
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = f * p[0] * 2 + (k ? (0.35 + i * 0.25) : 0);
-      var a = amp * p[1] * (k ? 0.45 : 1);
-      g.gain.setValueAtTime(0, when);
-      g.gain.linearRampToValueAtTime(a, when + 0.004 + i * 0.001);
-      g.gain.setTargetAtTime(0, when + 0.01, p[2] / 3.2);
-      o.connect(g); g.connect(self.bells);
-      o.start(when); o.stop(when + p[2] * 2.2 + 0.5);
+  var ctx = this.ctx, f = this.freq(nominalMidi) / 2, self = this, B = this._bell;
+  if (!B || B.f !== f || ctx.currentTime > B.until - 0.05) {
+    B = this._bell = { f: f, until: 0, parts: [] };
+    BELL.forEach(function (p, i) {
+      [0, 1].forEach(function (k) {
+        if (k && i > 1) return;                                  // a gentle warble on the hum and the prime only
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = f * p[0] * 2 + (k ? (0.22 + i * 0.12) : 0);
+        g.gain.value = 0; o.connect(g); g.connect(self.bells); o.start(when);
+        B.parts.push({ o: o, g: g, a: p[1] * (k ? 0.14 : 1), tc: p[2] / 3.2, peak: 0, at: when });
+      });
     });
+    (function reap() {   // let the bell go once it has fallen silent
+      setTimeout(function () { if (ctx.currentTime < B.until) return reap(); B.parts.forEach(function (q) { try { q.o.stop(); q.o.disconnect(); q.g.disconnect(); } catch (e) {} }); if (self._bell === B) self._bell = null; }, 1500);
+    })();
+  }
+  B.parts.forEach(function (q) {
+    var a = amp * q.a, left = q.peak * Math.exp(-Math.max(0, when - q.at) / q.tc);   // what still rings of the last stroke
+    var pk = Math.max(a, left) + 0.35 * Math.min(a, left);
+    q.g.gain.cancelScheduledValues(when);
+    q.g.gain.setValueAtTime(left, when);
+    q.g.gain.linearRampToValueAtTime(pk, when + 0.006);
+    q.g.gain.setTargetAtTime(0, when + 0.012, q.tc);
+    q.peak = pk; q.at = when + 0.006;
+    B.until = Math.max(B.until, when + q.tc * 7.5 + 0.5);
   });
   // the clapper
   var src = ctx.createBufferSource(); src.buffer = this.noise;
@@ -3044,7 +3060,13 @@ build();ui();
   document.body.appendChild(d);});})();
 // the gate: the window wakes in the dark; one touch rings a bell and opens the nave
 V.intro();
+// the gold title sits exactly where the nave's title will be, so one simply fades into the other
+function alignGate(){var h=document.querySelector('#gate h1'),t=$('title');if(!h||!t||document.body.classList.contains('entered'))return;
+  h.style.transform='';var a=t.getBoundingClientRect(),b=h.getBoundingClientRect();if(!a.width)return;
+  h.style.transform='translate('+(a.left+a.width/2-(b.left+b.width/2)).toFixed(2)+'px,'+(a.top-b.top).toFixed(2)+'px)';}
+alignGate();try{document.fonts.ready.then(alignGate);}catch(e){}addEventListener('resize',function(){setTimeout(alignGate,60);});setTimeout(alignGate,400);
 $('gate').onclick=function(){
+  alignGate();
   if(document.body.classList.contains('entered'))return;
   document.body.classList.add('entered');
   try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
