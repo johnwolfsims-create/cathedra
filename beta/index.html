@@ -2959,7 +2959,7 @@ var Rooms=(function(){
     // the room we leave is frozen into one sharp picture; the room we enter arrives alive,
     // its text, flames and glint already moving. The compositor slides and fades both.
     var fromCv=cvOf(from);
-    tA.width=fromCv.width;tA.height=fromCv.height;tA.getContext('2d').drawImage(fromCv,0,0);tA.style.width=W+'px';tA.style.height=H+'px';
+    tA.width=fromCv.width;tA.height=fromCv.height;tA.getContext('2d').drawImage(fromCv,0,0);var fr=fromCv.getBoundingClientRect();tA.style.width=(fr.width||W)+'px';tA.style.height=(fr.height||H)+'px';
     var D=axis==='y'?H+Math.round(H*0.22):W+Math.round(W*0.22),el=elOf(to),T3=function(v){return axis==='y'?'translate3d(0,'+v+'px,0)':'translate3d('+v+'px,0,0)';};
     tA.style.transition='none';tA.style.transform=T3(0);tA.style.opacity=1;
     tbox.hidden=false;
