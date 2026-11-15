@@ -247,10 +247,6 @@ details.fold[open]>summary::after{transform:rotate(225deg);margin-top:14px}
   <div class="chips" id="diapason"></div>
   <p class="note">The pitch of A. 415: baroque, darker. 466: Chorton, the high pitch of many German church organs in Bach's time.</p>
 
-  <h2>volumen</h2>
-  <div id="volSlider"></div>
-  <p class="note">Louder overall, without distortion. For speakers and home theaters that fall asleep when the music is soft.</p>
-
   <details class="fold"><summary><h2>ambitus</h2></summary>
   <div id="ambSliders"></div>
   <p class="note">The life of the building around the organ. All off unless you raise them.</p>
@@ -731,10 +727,11 @@ Organ.prototype.init = function () {
   this.roomLP = ctx.createBiquadFilter(); this.roomLP.type = 'lowpass'; this.roomLP.frequency.value = 20000; this.roomLP.Q.value = 0.4;
   this.roomLo = ctx.createBiquadFilter(); this.roomLo.type = 'lowshelf'; this.roomLo.frequency.value = 150; this.roomLo.gain.value = 0;
   this.master.connect(this.roomLP); this.roomLP.connect(this.roomLo); this.roomLo.connect(this.comp);
-  // volumen: make-up gain after the compressor, then a brick-wall limiter so a loud setting never distorts
-  this.vol = ctx.createGain(); this.vol.gain.value = this.volDb ? Math.pow(10, this.volDb / 20) : 1;
-  this.lim = ctx.createDynamicsCompressor(); this.lim.threshold.value = -2; this.lim.knee.value = 0; this.lim.ratio.value = 20; this.lim.attack.value = 0.002; this.lim.release.value = 0.25;
-  this.comp.connect(this.vol); this.vol.connect(this.lim); this.lim.connect(ctx.destination);
+  // the way out: straight to the speakers, or — once the phone accepts it — as one media stream through an <audio> element,
+  // so the lock screen, Bluetooth receivers and home theaters all see the organ itself as the music that is playing
+  this.out = ctx.createGain(); this.comp.connect(this.out);
+  this.direct = ctx.createGain(); this.out.connect(this.direct); this.direct.connect(ctx.destination);
+  if (ctx.createMediaStreamDestination) { try { this.stream = ctx.createMediaStreamDestination(); this.out.connect(this.stream); } catch (e) { this.stream = null; } }
 
   this.bus = ctx.createGain();            // all pipes
   this.breath = ctx.createGain();         // the air
@@ -940,9 +937,10 @@ Organ.prototype.room = function (name, secs) {
   f.exponentialRampToValueAtTime(down ? 620 : 20000, t + T);
   g.linearRampToValueAtTime(down ? 5 : 0, t + T);
 };
-Organ.prototype.volume = function (db) {   // 0 .. +12 dB
-  this.volDb = db;
-  if (this.vol) this.vol.gain.setTargetAtTime(Math.pow(10, db / 20), this.ctx.currentTime, 0.1);
+// streaming: the <audio> element carries the sound, so the direct path falls silent (never both: no doubling)
+Organ.prototype.route = function (viaStream) {
+  if (!this.ctx) return;
+  this.direct.gain.setTargetAtTime(viaStream ? 0 : 1, this.ctx.currentTime, 0.03);
 };
 G.Organ = Organ;
 })(window);
@@ -1280,7 +1278,7 @@ G.Lectio = { readings: readings, pretty: pretty, R: R };
 'use strict';
 /* ---------------- state ---------------- */
 var KEYN=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
-var DEF={volumen:0,ambitus:0.7,aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
+var DEF={ambitus:0.7,aer:0,longinqua:0,cerei:0,pluvia:0,tuneOn:'tonus',temper:'aequalis',diapason:440,caeli:false,lux:'auto',angelus:true,key:2,mode:'dorius',season:'auto',aetherium:.55,tempus:.6,spatium:.55,spiritus:.5,color:.5,pedale:1,durata:20};
 var S={};
 try{S=JSON.parse(localStorage.getItem('cathedra.v1'))||{};}catch(e){S={};}
 Object.keys(DEF).forEach(function(k){if(S[k]==null)S[k]=DEF[k];});
@@ -1446,19 +1444,24 @@ function loftWants(){if(playing&&!loftOpts&&curChord&&!curChord.final)offerNext(
 function unlockIOS(){
   try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
   try{
-    if(!window._silent){
-      var sr=(organ.ctx&&organ.ctx.sampleRate)||48000,n=sr/2,buf=new ArrayBuffer(44+n*2),dv=new DataView(buf);
-      function w(o,s){for(var i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));}
-      w(0,'RIFF');dv.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
-      dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n*2,true);
-      var a=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));a.loop=true;a.setAttribute('playsinline','');window._silent=a;
+    if(!window._silent&&organ.stream){
+      // the organ itself, as one media stream: what the phone, the lock screen and any receiver see as "playing"
+      var a=new Audio();a.setAttribute('playsinline','');a.autoplay=true;a.srcObject=organ.stream.stream;window._silent=a;
+      a.addEventListener('playing',function(){organ.route(true);});
+      a.addEventListener('pause',function(){organ.route(false);});
+      a.addEventListener('emptied',function(){organ.route(false);});
     }
-    window._silent.play().catch(function(){});
+    if(window._silent)window._silent.play().catch(function(){organ.route(false);});
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata=new MediaMetadata({title:'Cathedra',artist:'in silentio et spe',album:'Orgel',artwork:[{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'},{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'}]});
+      navigator.mediaSession.setActionHandler('play',function(){if(!playing)start();});
+      navigator.mediaSession.setActionHandler('pause',function(){if(playing)stop(false);});
+    }
   }catch(e){}
 }
 
 function start(){
-  organ.init();organ.volume(S.volumen||0);
+  organ.init();
   unlockIOS();
   if(organ.ctx.state!=='running')organ.ctx.resume();
   organ.apply();
@@ -1610,10 +1613,6 @@ function build(){
     row.querySelector('input').oninput=function(){S[d[0]]=+this.value;save();ambi();};
     $('ambSliders').appendChild(row);
   });
-  (function(){var row=document.createElement('label');row.className='slider';
-    row.innerHTML='<span><b>Volumen</b><small>from normal to four times louder</small></span><input type="range" min="0" max="12" step="0.5" value="'+(S.volumen||0)+'" aria-label="Volumen">';
-    row.querySelector('input').oninput=function(){S.volumen=+this.value;save();organ.volume(S.volumen);};
-    $('volSlider').appendChild(row);})();
   [[0,'nulla'],[1,'16′'],[2,'plena']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.pedale=+this.dataset.v;orgel.set({pedale:S.pedale});save();ui();};$('pedale').appendChild(b);});
   [[10,'x'],[20,'xx'],[30,'xxx'],[0,'sine fine']].forEach(function(d){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.v=d[0];b.textContent=d[1];b.onclick=function(){S.durata=+this.dataset.v;orgel.wantEnd=false;save();ui();};$('durata').appendChild(b);});
   $('caeliBtn').onclick=function(){S.caeli=!S.caeli;save();ui();V.relight();};
@@ -2856,7 +2855,7 @@ V.intro();
 $('gate').onclick=function(){
   if(document.body.classList.contains('entered'))return;
   document.body.classList.add('entered');
-  try{organ.volume(S.volumen||0);organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
+  try{organ.init();unlockIOS();if(organ.ctx.state!=='running')organ.ctx.resume();organ.fade(0.9,0.2);organ.bell(nominalNote(),organ.ctx.currentTime+0.1,0.11);ambi();}catch(e){}
   V.enter();V.bell();
   $('gate').classList.add('gone');document.body.classList.remove('intro');
   setTimeout(function(){$('gate').hidden=true;},2400);
