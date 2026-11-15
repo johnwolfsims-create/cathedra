@@ -1760,13 +1760,13 @@ var Rain = (function () {
     if (first) this.pe = want;
     this.pe += (want - this.pe) * (1 - Math.exp(-dt / 2.5));   // the weather turns, but not in a blink
     var p = this.pe, D = this.drops;
-    if (p < 0.01 && !D.length) { this.idle = true; return; }
+    if (p < 0.004 && !D.length) { this.pe = p; this.idle = true; return; }
     this.idle = false;
     if (!this.trail) { var ts = 0.5 * Math.min(2, window.devicePixelRatio || 1); this.trail = mk(o.w * u * ts, o.h * u * ts); this.tk = this.trail.width / o.w; }
     var tx = this.trail.getContext('2d'), tk = this.tk;
     if (dt > 0) { tx.globalCompositeOperation = 'destination-out'; tx.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 0.8)).toFixed(4) + ')'; tx.fillRect(0, 0, this.trail.width, this.trail.height); tx.globalCompositeOperation = 'source-over'; }
-    // how many drops are on the glass at once: always real rain, heavier as Pluvia rises
-    var target = p < 0.01 ? 0 : Math.min(o.max || 300, Math.round(this.areaPx / 42 * (0.4 + 0.6 * p)));
+    // how many drops are on the glass at once: the heaviest rain, shared out evenly over the slider — each step adds the same
+    var full = Math.min(o.max || 300, Math.round(this.areaPx / 42)), target = Math.round(full * Math.max(0, Math.min(1, p)));
     if (first) for (var f = 0; f < target; f++) this.spawn(t, true);
     var need = target - D.length; if (need > 0) { var add = Math.min(need, Math.ceil(need * Math.min(1, dt * 6)) + 1); for (var i = 0; i < add; i++) this.spawn(t, false); }
     tx.lineCap = 'round'; var seg = [];
@@ -1791,7 +1791,7 @@ var Rain = (function () {
     if (this.idle) return;
     var o = this.o, t = this.t, D = this.drops, li = Math.max(0.22, Math.min(1.4, light)), p = this.pe;
     g.save(); if (!noClip) { o.clip(g); g.clip(); }
-    if (p > 0.01) { g.fillStyle = 'rgba(10,13,20,' + (0.08 + 0.07 * p).toFixed(3) + ')'; g.fillRect(0, 0, o.w, o.h); }   // wet glass, a little greyer
+    if (p > 0.005) { g.fillStyle = 'rgba(10,13,20,' + (0.15 * p).toFixed(3) + ')'; g.fillRect(0, 0, o.w, o.h); }   // wet glass, a little greyer
     g.globalAlpha = Math.min(1, 0.55 + 0.45 * li); g.drawImage(this.trail, 0, 0, o.w, o.h);
     var i, d, a, r, st;
     for (i = 0; i < D.length; i++) { d = D[i]; a = Math.min(1, (t - d.born) / 0.08); d.a = a; if (d.r * o.u < 0.75) continue; r = d.r * 1.25; st = 1 + Math.min(0.9, d.v * o.u / 600); g.globalAlpha = a; g.drawImage(RIM, d.x - r, d.y - r * st, r * 2, r * 2 * st); }
@@ -1800,7 +1800,8 @@ var Rain = (function () {
     g.restore();
   };
   // heard rain means rain on the glass
-  function level() { try { return S.ambitus > 0.01 && S.pluvia > 0.005 ? S.pluvia : 0; } catch (e) { return 0; } }
+  // and none until the gate has been passed
+  function level() { try { return document.body.classList.contains('entered') && S.ambitus > 0.01 ? Math.max(0, Math.min(1, S.pluvia || 0)) : 0; } catch (e) { return 0; } }
   return { Field: Field, level: level };
 })();
 
